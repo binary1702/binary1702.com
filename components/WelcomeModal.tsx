@@ -54,7 +54,7 @@ export default function WelcomeModal({ onEnter }: Props) {
     const matrix = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ123456789@#$%^&*()*&^%+-/~{[|`]}";
     const chars = matrix.split("");
 
-    const fontSize = 10;
+    const fontSize = 13;
     const columns = Math.floor(canvas.width / fontSize);
 
     // Initialize drops
@@ -165,7 +165,7 @@ export default function WelcomeModal({ onEnter }: Props) {
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          gap: 12,
+          gap: 15,
           opacity: phase === "fading" || phase === "done" ? 0 : 1,
           transition: "opacity 0.8s ease-out",
         }}
@@ -173,7 +173,7 @@ export default function WelcomeModal({ onEnter }: Props) {
         {/* Logo */}
         <div
           style={{
-            fontSize: 28,
+            fontSize: 35,
             fontWeight: 700,
             letterSpacing: "0.3em",
             textTransform: "uppercase",
@@ -187,7 +187,7 @@ export default function WelcomeModal({ onEnter }: Props) {
         <div
           style={{
             fontFamily: "monospace",
-            fontSize: 14,
+            fontSize: 18,
             fontStyle: "italic",
             letterSpacing: "0.2em",
           }}
@@ -197,30 +197,55 @@ export default function WelcomeModal({ onEnter }: Props) {
           <span style={{ color: "#6B9E6B" }}>110</span>
         </div>
 
-        {/* Enter button */}
-        <button
-          onClick={handleEnter}
-          style={{
-            marginTop: 8,
-            background: "none",
-            border: "1px solid var(--room-muted)",
-            color: "var(--room-fg)",
-            fontSize: 14,
-            letterSpacing: "0.3em",
-            textTransform: "uppercase",
-            padding: "12px 32px",
-            cursor: "pointer",
-            transition: "border-color 0.2s ease, color 0.2s ease",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = "var(--room-fg)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = "var(--room-muted)";
-          }}
-        >
-          Enter
-        </button>
+        {/* Enter button + Client Login */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 15, marginTop: 10 }}>
+          <button
+            onClick={handleEnter}
+            style={{
+              background: "none",
+              border: "1px solid var(--room-muted)",
+              color: "var(--room-fg)",
+              fontSize: 18,
+              letterSpacing: "0.3em",
+              textTransform: "uppercase",
+              padding: "15px 40px",
+              cursor: "pointer",
+              transition: "border-color 0.2s ease, color 0.2s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = "var(--room-fg)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = "var(--room-muted)";
+            }}
+          >
+            Enter
+          </button>
+          <a
+            href="https://portal.binary1702.com"
+            style={{
+              background: "none",
+              border: "1px solid rgba(255,255,255,0.25)",
+              color: "rgba(255,255,255,0.5)",
+              fontSize: 12,
+              letterSpacing: "0.2em",
+              textTransform: "uppercase",
+              textDecoration: "none",
+              padding: "10px 25px",
+              transition: "border-color 0.2s ease, color 0.2s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = "rgba(255,255,255,0.5)";
+              e.currentTarget.style.color = "rgba(255,255,255,0.8)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)";
+              e.currentTarget.style.color = "rgba(255,255,255,0.5)";
+            }}
+          >
+            Client Login
+          </a>
+        </div>
       </div>
     </div>
   );
