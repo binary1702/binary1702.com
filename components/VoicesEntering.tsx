@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useAudioContext } from "./AudioProvider";
 
 const sans = "'Archivo Narrow', system-ui, sans-serif";
 
@@ -137,25 +138,60 @@ const voiceTexts = [
 const MAX_VOICES_DESKTOP = 100;
 const MAX_VOICES_MOBILE = 35;
 
-// Desktop: original 6-phase burst system
-// Mobile: slow start (1.7s per quote for first 4), then accelerates
-const MOBILE_TOTAL_DURATION = 35;
+// Mobile: 35 quotes, compressed arc
+const MOBILE_TOTAL_DURATION = 20;
 
 // After all quotes shown, spam phase highlights random existing quotes
 const SPAM_DURATION_DESKTOP = 8;
 const SPAM_DURATION_MOBILE = 5;
 const SPAM_INTERVAL = 3200;
 
-// Desktop phase timing (original system)
-type PhaseConfig = { pct: number; duration: number; burst: number | number[] };
-const DESKTOP_PHASE_DURATIONS: PhaseConfig[] = [
-  { pct: 0.12, duration: 20, burst: 1 },
-  { pct: 0.13, duration: 14, burst: 1 },
-  { pct: 0.15, duration: 10, burst: 1 },
-  { pct: 0.20, duration: 6, burst: 2 },
-  { pct: 0.20, duration: 3, burst: 3 },
-  { pct: 0.20, duration: 1.5, burst: 4 },
+// Four-phase attention arc based on perceptual thresholds
+// ~36s total: first 20 msgs = ~20s, last 60 msgs = ~8s (asymmetry IS the emotion)
+// Thresholds: ~1.5s (readable) → ~0.85s (pattern) → ~0.45s (pressure) → bursts (texture)
+type ActConfig = {
+  quotes: number;
+  cadenceMin: number;
+  cadenceMax: number;
+  burstSize: number | number[];
+  breathAfter?: number[];  // insert 800-1000ms breath after these quote indices within phase
+  plateau?: [number, number]; // [startIdx, endIdx] within phase where gap stops shrinking
+};
+
+const DESKTOP_ACTS: ActConfig[] = [
+  // Individual (1-6): gaps 1.4-1.9s, singles. ~10s. Viewer learns the rhythm.
+  { quotes: 6, cadenceMin: 1.4, cadenceMax: 1.9, burstSize: 1 },
+
+  // Pattern (7-18): gaps 0.7-1.0s, singles, one pair near end. ~10s.
+  // False plateau at messages 3-6 where gap stops shrinking
+  { quotes: 12, cadenceMin: 0.7, cadenceMax: 1.0, burstSize: 1, plateau: [3, 6] },
+
+  // Pressure (19-40): gaps 0.35-0.6s, pairs common, first triple.
+  // Two breaths for false relief that makes next burst hit harder
+  { quotes: 22, cadenceMin: 0.35, cadenceMax: 0.6, burstSize: [1, 2, 2, 3], breathAfter: [7, 15] },
+
+  // Overload (41-100): bursts of 3-5, 40-120ms inside burst, 300ms between collapsing to 120ms
+  { quotes: 60, cadenceMin: 0.12, cadenceMax: 0.30, burstSize: [3, 4, 5] },
 ];
+
+// Mobile: 35 quotes, ~20s. Define by minimum counts, not percentages.
+const MOBILE_ACTS: ActConfig[] = [
+  // Individual: 4 msgs, 1.3-1.7s. Must establish rhythm.
+  { quotes: 4, cadenceMin: 1.3, cadenceMax: 1.7, burstSize: 1 },
+
+  // Pattern: 7 msgs, 0.6-0.9s. Still readable, starting to feel like a lot.
+  { quotes: 7, cadenceMin: 0.6, cadenceMax: 0.9, burstSize: 1 },
+
+  // Pressure: 9 msgs, 0.3-0.55s, one breath.
+  { quotes: 9, cadenceMin: 0.3, cadenceMax: 0.55, burstSize: [1, 2], breathAfter: [5] },
+
+  // Overload: 15 in bursts of 3-4. This is what you cut hardest.
+  { quotes: 15, cadenceMin: 0.1, cadenceMax: 0.25, burstSize: [3, 4] },
+];
+
+// Hard cut → silence longer than any pause viewer has seen
+const SILENCE_DURATION = 1300; // 1.3s (longer than the 1.0s breaths)
+const MOBILE_SILENCE_DURATION = 1000;
 
 type Phase = "waiting" | "entering" | "spam" | "complete";
 
@@ -281,6 +317,8 @@ const MOBILE_BREAKPOINT = 768;
 export default function VoicesEntering({ onComplete }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const onCompleteRef = useRef(onComplete);
+  const iphoneAudioRef = useRef<HTMLAudioElement | null>(null);
+  const { muted } = useAudioContext();
   const [isInView, setIsInView] = useState(false);
   const [visibleCount, setVisibleCount] = useState(0);
   const [phase, setPhase] = useState<Phase>("waiting");
@@ -299,6 +337,42 @@ export default function VoicesEntering({ onComplete }: Props) {
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
+
+  // Set up iphone sound effect
+  useEffect(() => {
+    const audio = new Audio("/music/iphone.mp3");
+    // Try opus if supported
+    const testAudio = document.createElement("audio");
+    if (testAudio.canPlayType("audio/ogg; codecs=opus")) {
+      audio.src = "/music/iphone.opus";
+    }
+    audio.volume = 0.6;
+    iphoneAudioRef.current = audio;
+
+    return () => {
+      audio.pause();
+      audio.src = "";
+    };
+  }, []);
+
+  // Play iphone sound with cooldown (no triggers closer than 400ms)
+  // Audio plateaus while visuals keep accelerating = "can't keep up" feeling
+  const lastSoundTimeRef = useRef(0);
+  const SOUND_COOLDOWN = 400; // ms - floor for audio tempo
+
+  const playIphoneSound = useCallback(() => {
+    if (muted || !iphoneAudioRef.current) return;
+
+    const now = Date.now();
+    if (now - lastSoundTimeRef.current < SOUND_COOLDOWN) return; // Skip if too soon
+    lastSoundTimeRef.current = now;
+
+    const clone = iphoneAudioRef.current.cloneNode() as HTMLAudioElement;
+    clone.volume = 0.5 + Math.random() * 0.15; // 0.5-0.65 (tighter range)
+    clone.playbackRate = 0.97 + Math.random() * 0.06; // 0.97-1.03 (less jitter to avoid beating)
+    clone.play().catch(() => {});
+    clone.onended = () => clone.remove();
+  }, [muted]);
 
   const maxVoices = isMobile ? MAX_VOICES_MOBILE : MAX_VOICES_DESKTOP;
   const positions = isMobile ? MOBILE_POSITIONS : BASE_POSITIONS;
@@ -363,81 +437,49 @@ export default function VoicesEntering({ onComplete }: Props) {
     const spamDuration = isMobile ? SPAM_DURATION_MOBILE : SPAM_DURATION_DESKTOP;
     let finalTime = 0;
 
-    if (isMobile) {
-      // Mobile: slow start (1.7s per quote for first 4), then accelerate
-      // First 4 quotes at fixed 1.7s intervals
-      const slowCount = 4;
-      const slowInterval = 1700; // 1.7 seconds
-      const slowPhaseEnd = slowCount * slowInterval;
+    // Monotone acceleration: every gap ≤ previous gap × 1.05
+    // Jitter shrinks with speed: ±30% at 1.5s → ±8% at 0.1s
+    // No explicit bursts in overload - let clumping emerge from jitter
+    const silenceGap = isMobile ? MOBILE_SILENCE_DURATION : SILENCE_DURATION;
 
-      // Remaining quotes accelerate over rest of duration
-      const remainingQuotes = totalVoices - slowCount;
-      const remainingTime = (MOBILE_TOTAL_DURATION * 1000) - slowPhaseEnd;
+    // Monotone acceleration: every gap ≤ previous gap (never slows down)
+    // Exponential base curve with shrinking jitter, no breaths
+    const startGap = isMobile ? 1.4 : 1.6;
+    const endGap = isMobile ? 0.1 : 0.08;
 
-      for (let i = 0; i < totalVoices; i++) {
-        const idx = i;
-        let time: number;
+    let currentTime = 0;
+    let previousGap = startGap;
 
-        if (i < slowCount) {
-          // First 4: fixed 1.7s intervals
-          time = i * slowInterval;
-        } else {
-          // Rest: accelerating (slow to fast)
-          const progressInFast = (i - slowCount) / remainingQuotes;
-          // Use sqrt for acceleration (starts slow, ends fast)
-          time = slowPhaseEnd + remainingTime * Math.pow(progressInFast, 0.5);
-        }
+    for (let i = 0; i < totalVoices; i++) {
+      const progress = i / totalVoices; // 0 to 1
 
-        timeouts.push(
-          setTimeout(() => setVisibleCount(idx + 1), time)
-        );
-      }
-      finalTime = MOBILE_TOTAL_DURATION * 1000;
-    } else {
-      // Desktop: original 6-phase burst system
-      let currentDelay = 0;
-      let voiceIndex = 0;
+      // Exponential decay for base gap
+      const baseGap = startGap * Math.pow(endGap / startGap, progress);
 
-      for (const { pct, duration, burst } of DESKTOP_PHASE_DURATIONS) {
-        const targetCount = Math.floor(totalVoices * pct);
-        const avgBurst = Array.isArray(burst) ? (burst[0] + burst[burst.length - 1]) / 2 : burst;
-        const tickCount = Math.ceil(targetCount / avgBurst);
-        const interval = duration / tickCount;
-        let phaseVoices = 0;
+      // Jitter shrinks with speed: ±25% early → ±8% late
+      const jitterRange = 0.25 - 0.17 * progress;
+      const jitter = 1 - jitterRange + Math.random() * (jitterRange * 2);
 
-        while (phaseVoices < targetCount && voiceIndex < totalVoices) {
-          const burstCount = Array.isArray(burst)
-            ? burst[Math.floor(Math.random() * burst.length)]
-            : burst;
+      // Monotone constraint: gap can never exceed previous gap
+      let gap = baseGap * jitter;
+      gap = Math.min(gap, previousGap);
+      previousGap = gap;
 
-          for (let b = 0; b < burstCount && voiceIndex < totalVoices && phaseVoices < targetCount; b++) {
-            const idx = voiceIndex;
-            const staggerMs = Math.min(200, Math.max(80, interval * 1000 / 3));
-            const stagger = b * staggerMs;
-            timeouts.push(
-              setTimeout(() => setVisibleCount(idx + 1), currentDelay * 1000 + stagger)
-            );
-            voiceIndex++;
-            phaseVoices++;
-          }
-          currentDelay += interval;
-        }
-      }
+      const idx = i;
+      timeouts.push(
+        setTimeout(() => {
+          setVisibleCount(idx + 1);
+          playIphoneSound();
+        }, currentTime * 1000)
+      );
 
-      // Handle remaining voices
-      while (voiceIndex < totalVoices) {
-        const idx = voiceIndex;
-        timeouts.push(
-          setTimeout(() => setVisibleCount(idx + 1), currentDelay * 1000)
-        );
-        currentDelay += 0.08;
-        voiceIndex++;
-      }
-      finalTime = currentDelay * 1000;
+      currentTime += gap;
     }
 
-    // Spam phase with "Sound Familiar?" at bottom
-    timeouts.push(setTimeout(() => setPhase("spam"), finalTime));
+    finalTime = currentTime * 1000;
+
+    // Hard cut → silence → "Sound familiar?"
+    timeouts.push(setTimeout(() => setPhase("spam"), finalTime + silenceGap));
 
     // After spam → complete
     timeouts.push(setTimeout(() => {
@@ -446,7 +488,7 @@ export default function VoicesEntering({ onComplete }: Props) {
     }, finalTime + spamDuration * 1000));
 
     return () => timeouts.forEach(clearTimeout);
-  }, [phase, totalVoices, isMobile, animationKey]);
+  }, [phase, totalVoices, isMobile, animationKey, playIphoneSound]);
 
   // Spam phase: randomly highlight 3-4 existing quotes with fade transitions
   useEffect(() => {
