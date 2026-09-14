@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AudioProvider } from "@/components/AudioProvider";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
   title: "Binary1702",
@@ -28,6 +29,7 @@ export default function RootLayout({
         <AudioProvider>
           {children}
         </AudioProvider>
+        <Analytics />
       </body>
     </html>
   );
