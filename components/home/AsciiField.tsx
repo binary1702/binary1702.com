@@ -3,10 +3,11 @@
 import { useEffect, useRef } from "react";
 
 /* ------------------------------------------------------------------
-   AsciiField — a quiet drifting field of characters behind the hero.
-   Characters start scattered (noise) and settle toward a grid over
-   time: complexity resolving into structure. Canvas, no deps, pauses
-   when off-screen or when the visitor prefers reduced motion.
+   AsciiField — a quiet drifting field of characters behind the page.
+   Fixed to the viewport, so it persists under every section. Each
+   character wanders slowly around its home cell and never fully
+   settles: the page is always faintly alive. Canvas, no deps; static
+   when the visitor prefers reduced motion.
    ------------------------------------------------------------------ */
 
 const GLYPHS = "·:+-=|/\\_01[]{}<>";
@@ -57,13 +58,14 @@ export default function AsciiField() {
       ctx.textBaseline = "middle";
       for (const p of pts) {
         if (!reduce) {
-          // ease toward the grid, with a slow breathing drift
-          p.x += (p.gx - p.x) * p.s;
-          p.y += (p.gy - p.y) * p.s;
-          const d = Math.sin(t * 0.0004 + p.gx * 0.01 + p.gy * 0.013) * 2;
-          ctx.globalAlpha = p.a + Math.sin(t * 0.001 + p.gx) * 0.03;
+          // wander: each glyph orbits its home cell on its own slow phase, never arriving
+          const wx = Math.sin(t * 0.00022 * (0.6 + p.s * 40) + p.gx * 0.011) * 14;
+          const wy = Math.cos(t * 0.00019 * (0.6 + p.s * 40) + p.gy * 0.013) * 10;
+          p.x += (p.gx + wx - p.x) * 0.02;
+          p.y += (p.gy + wy - p.y) * 0.02;
+          ctx.globalAlpha = p.a + Math.sin(t * 0.0008 + p.gx) * 0.03;
           ctx.fillStyle = "#F2EFE7";
-          ctx.fillText(p.ch, p.x + d, p.y);
+          ctx.fillText(p.ch, p.x, p.y);
         } else {
           ctx.globalAlpha = p.a;
           ctx.fillStyle = "#F2EFE7";
@@ -77,11 +79,11 @@ export default function AsciiField() {
     seed();
     draw(0);
 
-    const io = new IntersectionObserver(([e]) => {
-      running = e.isIntersecting;
+    const onVis = () => {
+      running = document.visibilityState === "visible";
       if (running && !reduce) { cancelAnimationFrame(raf); raf = requestAnimationFrame(draw); }
-    });
-    io.observe(canvas);
+    };
+    document.addEventListener("visibilitychange", onVis);
 
     const onResize = () => { seed(); if (reduce) draw(0); };
     window.addEventListener("resize", onResize);
@@ -89,7 +91,7 @@ export default function AsciiField() {
     return () => {
       running = false;
       cancelAnimationFrame(raf);
-      io.disconnect();
+      document.removeEventListener("visibilitychange", onVis);
       window.removeEventListener("resize", onResize);
     };
   }, []);
@@ -99,13 +101,14 @@ export default function AsciiField() {
       ref={ref}
       aria-hidden="true"
       style={{
-        position: "absolute",
+        position: "fixed",
         inset: 0,
         width: "100%",
         height: "100%",
         pointerEvents: "none",
-        maskImage: "radial-gradient(ellipse 70% 80% at 65% 45%, #000 20%, transparent 75%)",
-        WebkitMaskImage: "radial-gradient(ellipse 70% 80% at 65% 45%, #000 20%, transparent 75%)",
+        zIndex: 0,
+        maskImage: "radial-gradient(ellipse 85% 85% at 50% 50%, #000 40%, transparent 100%)",
+        WebkitMaskImage: "radial-gradient(ellipse 85% 85% at 50% 50%, #000 40%, transparent 100%)",
       }}
     />
   );

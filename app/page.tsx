@@ -116,9 +116,9 @@ export default function HomePage() {
       <HomeNav />
 
       {/* 01 — Hero */}
+      <AsciiField />
       <section className={s.hero} id="problem" aria-labelledby="hero-title">
         <div className={s.heroGlow} aria-hidden="true" />
-        <AsciiField />
         <div className={s.wrap}>
           <div className={s.heroGrid}>
             <div>
