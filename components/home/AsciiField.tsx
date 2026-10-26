@@ -51,19 +51,24 @@ export default function AsciiField() {
       }
     };
 
+    let lastT = 0;
     const draw = (t: number) => {
+      const dt = lastT ? Math.min(0.05, (t - lastT) / 1000) : 0;
+      lastT = t;
       ctx.clearRect(0, 0, w, h);
       ctx.font = "12px 'Archivo Narrow', system-ui, sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       for (const p of pts) {
         if (!reduce) {
-          // wander: each glyph orbits its home cell on its own slow phase, never arriving
-          const wx = Math.sin(t * 0.00022 * (0.6 + p.s * 40) + p.gx * 0.011) * 14;
-          const wy = Math.cos(t * 0.00019 * (0.6 + p.s * 40) + p.gy * 0.013) * 10;
-          p.x += (p.gx + wx - p.x) * 0.02;
-          p.y += (p.gy + wy - p.y) * 0.02;
-          ctx.globalAlpha = p.a + Math.sin(t * 0.0008 + p.gx) * 0.03;
+          // always moving: a slow upward current that wraps, plus a local wander on each glyph's own phase
+          p.gy -= dt * 9 * (0.7 + p.s * 30);
+          if (p.gy < -cell) { p.gy += h + cell * 2; p.gx = Math.random() * w; }
+          const wx = Math.sin(t * 0.0011 * (0.6 + p.s * 40) + p.gx * 0.011) * 10;
+          const wy = Math.cos(t * 0.0009 * (0.6 + p.s * 40) + p.gy * 0.013) * 6;
+          p.x = p.gx + wx;
+          p.y = p.gy + wy;
+          ctx.globalAlpha = p.a + Math.sin(t * 0.0014 + p.gx) * 0.04;
           ctx.fillStyle = "#F2EFE7";
           ctx.fillText(p.ch, p.x, p.y);
         } else {
