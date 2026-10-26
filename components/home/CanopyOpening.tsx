@@ -21,6 +21,7 @@ export default function CanopyOpening() {
   const ref = useRef<HTMLDivElement>(null);
   const words = useRef<HTMLDivElement>(null);
   const [ready, setReady] = useState(false);
+  const [gone, setGone] = useState(false);
 
   useEffect(() => {
     const el = ref.current, w = words.current;
@@ -33,6 +34,7 @@ export default function CanopyOpening() {
       const o = 1 - p * p; // ease: holds, then lets go
       el.style.opacity = o.toFixed(3);
       el.style.visibility = p >= 1 ? "hidden" : "visible";
+      setGone(p >= 1);
       w.style.transform = `translate3d(0, ${(-window.scrollY * 0.35).toFixed(1)}px, 0)`;
       raf = 0;
     };
@@ -45,7 +47,7 @@ export default function CanopyOpening() {
 
   return (
     <div ref={ref} aria-label="Binary 1702 — Enterprise Technology Transformation" style={{ position: "fixed", inset: 0, zIndex: 60, background: "#000", color: "#F2EFE7", overflow: "hidden" }}>
-      <CanopyField />
+      <CanopyField active={!gone} />
 
       <div
         ref={words}

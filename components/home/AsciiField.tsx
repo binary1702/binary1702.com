@@ -14,6 +14,8 @@ const GLYPHS = "·:+-=|/\\_01[]{}<>";
 
 export default function AsciiField() {
   const ref = useRef<HTMLCanvasElement>(null);
+  const visibleRef = useRef(true);
+  const wake = useRef<() => void>(() => {});
 
   useEffect(() => {
     const canvas = ref.current;
@@ -29,13 +31,27 @@ export default function AsciiField() {
     type P = { gx: number; gy: number; x: number; y: number; ch: string; a: number; s: number };
     let pts: P[] = [];
     const cell = 34;
+    // glyph sprites by (char × alpha bucket): drawImage of a cached bitmap beats fillText per glyph
+    const SPR = 16, ALPHA_STEPS = 10;
+    const sprites = new Map<string, HTMLCanvasElement>();
+    const sprite = (chr: string, ai: number) => {
+      const key = chr + ai;
+      let s = sprites.get(key);
+      if (s) return s;
+      s = document.createElement("canvas"); s.width = SPR * dpr; s.height = SPR * dpr;
+      const c = s.getContext("2d")!; c.scale(dpr, dpr);
+      c.font = "12px 'Archivo Narrow', system-ui, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle";
+      c.globalAlpha = (ai + 0.5) / ALPHA_STEPS; c.fillStyle = "#F2EFE7";
+      c.fillText(chr, SPR / 2, SPR / 2);
+      sprites.set(key, s); return s;
+    };
 
     const seed = () => {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
       w = canvas.clientWidth; h = canvas.clientHeight;
       canvas.width = w * dpr; canvas.height = h * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      pts = [];
+      pts = []; sprites.clear();
       for (let y = cell / 2; y < h; y += cell) {
         for (let x = cell / 2; x < w; x += cell) {
           if (Math.random() < 0.55) continue; // sparse
@@ -56,9 +72,6 @@ export default function AsciiField() {
       const dt = lastT ? Math.min(0.05, (t - lastT) / 1000) : 0;
       lastT = t;
       ctx.clearRect(0, 0, w, h);
-      ctx.font = "12px 'Archivo Narrow', system-ui, sans-serif";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
       for (const p of pts) {
         if (!reduce) {
           // always moving: a slow upward current that wraps, plus a local wander on each glyph's own phase
@@ -68,18 +81,24 @@ export default function AsciiField() {
           const wy = Math.cos(t * 0.0009 * (0.6 + p.s * 40) + p.gy * 0.013) * 6;
           p.x = p.gx + wx;
           p.y = p.gy + wy;
-          ctx.globalAlpha = p.a + Math.sin(t * 0.0014 + p.gx) * 0.04;
-          ctx.fillStyle = "#F2EFE7";
-          ctx.fillText(p.ch, p.x, p.y);
+          const a = p.a + Math.sin(t * 0.0014 + p.gx) * 0.04;
+          ctx.drawImage(sprite(p.ch, Math.max(0, Math.min(ALPHA_STEPS - 1, (a * ALPHA_STEPS) | 0))), p.x - SPR / 2, p.y - SPR / 2, SPR, SPR);
         } else {
-          ctx.globalAlpha = p.a;
-          ctx.fillStyle = "#F2EFE7";
-          ctx.fillText(p.ch, p.gx, p.gy);
+          ctx.drawImage(sprite(p.ch, Math.max(0, Math.min(ALPHA_STEPS - 1, (p.a * ALPHA_STEPS) | 0))), p.gx - SPR / 2, p.gy - SPR / 2, SPR, SPR);
         }
       }
       ctx.globalAlpha = 1;
-      if (running && !reduce) raf = requestAnimationFrame(draw);
+      if (running && visibleRef.current && !reduce) raf = requestAnimationFrame(draw); else raf = 0;
     };
+    wake.current = () => { if (!raf && running && visibleRef.current && !reduce) raf = requestAnimationFrame(draw); };
+
+    // the opening covers the first viewport: sleep until the visitor has scrolled past it
+    const onScroll = () => {
+      const v = window.scrollY > window.innerHeight * 0.3;
+      if (v !== visibleRef.current) { visibleRef.current = v; if (v) wake.current(); }
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
 
     seed();
     draw(0);
@@ -97,6 +116,7 @@ export default function AsciiField() {
       running = false;
       cancelAnimationFrame(raf);
       document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
     };
   }, []);
