@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import GenerativeCanvas from "@/components/lab/GenerativeCanvas";
-import { LorenzSystem, CanopySystem, ReactionSystem, type GenerativeSystem } from "@/lib/generative";
+import { LorenzSystem, CanopySystem, ReactionSystem, OrganismSystem, type GenerativeSystem } from "@/lib/generative";
 import s from "./lab.module.css";
 
 /* ------------------------------------------------------------------
@@ -12,7 +12,7 @@ import s from "./lab.module.css";
    before it meets the homepage.
    ------------------------------------------------------------------ */
 
-const KEYS = ["chaos", "canopy", "emergence"] as const;
+const KEYS = ["chaos", "canopy", "emergence", "organism"] as const;
 type Key = (typeof KEYS)[number];
 
 export default function GenerativeLab() {
@@ -21,7 +21,7 @@ export default function GenerativeLab() {
 
   // one instance per system, created lazily and kept so switching back resumes where it left off
   const systems = useMemo<Record<Key, GenerativeSystem>>(
-    () => ({ chaos: new LorenzSystem(), canopy: new CanopySystem(), emergence: new ReactionSystem() }),
+    () => ({ chaos: new LorenzSystem(), canopy: new CanopySystem(), emergence: new ReactionSystem(), organism: new OrganismSystem() }),
     [],
   );
   const system = systems[key];

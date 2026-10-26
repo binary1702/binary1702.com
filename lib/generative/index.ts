@@ -3,3 +3,4 @@ export { AsciiRenderer, PALETTE, RAMP } from "./ascii";
 export { LorenzSystem } from "./lorenz";
 export { CanopySystem } from "./canopy";
 export { ReactionSystem } from "./reaction";
+export { OrganismSystem } from "./organism";

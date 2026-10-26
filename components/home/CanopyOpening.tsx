@@ -27,6 +27,7 @@ export default function CanopyOpening() {
     const el = ref.current, w = words.current;
     if (!el || !w) return;
     const t = window.setTimeout(() => setReady(true), 300);
+    document.documentElement.dataset.snap = "y";
     let raf = 0;
     const update = () => {
       const vh = window.innerHeight;
@@ -42,7 +43,7 @@ export default function CanopyOpening() {
     update();
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
-    return () => { window.clearTimeout(t); cancelAnimationFrame(raf); window.removeEventListener("scroll", onScroll); window.removeEventListener("resize", onScroll); };
+    return () => { delete document.documentElement.dataset.snap; window.clearTimeout(t); cancelAnimationFrame(raf); window.removeEventListener("scroll", onScroll); window.removeEventListener("resize", onScroll); };
   }, []);
 
   return (

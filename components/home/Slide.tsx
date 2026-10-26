@@ -1,7 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import CanopyField from "./CanopyField";
+import GenerativeCanvas from "@/components/lab/GenerativeCanvas";
+import { LorenzSystem, CanopySystem, ReactionSystem, OrganismSystem, type GenerativeSystem } from "@/lib/generative";
+
+const SYSTEMS = {
+  chaos: () => new LorenzSystem(),
+  canopy: () => new CanopySystem(),
+  emergence: () => new ReactionSystem(),
+  organism: () => new OrganismSystem(),
+} as const;
+export type SystemKey = keyof typeof SYSTEMS;
 
 /* ------------------------------------------------------------------
    Slide — one beat of the story as one full-viewport composition.
@@ -18,7 +28,8 @@ type Props = {
   id: string;
   index: string;          // "01"
   label: string;          // "The problem"
-  src: string;            // /terrain.jpg
+  src?: string;           // a photo to derive from, e.g. /network.jpg …
+  system?: SystemKey;     // … or a generative system from lib/generative, by key
   cycle?: boolean;
   cell?: number;
   line: ReactNode;        // the one serif sentence
@@ -27,7 +38,7 @@ type Props = {
   children?: ReactNode;   // anything else that must sit in the slide (a CTA, a form) — use sparingly
 };
 
-export default function Slide({ id, index, label, src, cycle = false, cell, line, sub, align = "left", children }: Props) {
+export default function Slide({ id, index, label, src, system, cycle = false, cell, line, sub, align = "left", children }: Props) {
   const ref = useRef<HTMLElement>(null);
   const [onScreen, setOnScreen] = useState(false);
 
@@ -40,6 +51,7 @@ export default function Slide({ id, index, label, src, cycle = false, cell, line
   }, []);
 
   const left = align === "left";
+  const sys = useMemo<GenerativeSystem | null>(() => (system ? SYSTEMS[system]() : null), [system]);
 
   return (
     <section
@@ -49,7 +61,7 @@ export default function Slide({ id, index, label, src, cycle = false, cell, line
       style={{ position: "relative", minHeight: "100dvh", background: "#000", color: "#F2EFE7", overflow: "hidden", zIndex: 1 }}
     >
       <div style={{ position: "absolute", inset: 0 }}>
-        <CanopyField src={src} active={onScreen} cycle={cycle} cell={cell} />
+        {sys ? <GenerativeCanvas system={sys} paused={!onScreen} /> : <CanopyField src={src ?? "/canopy.jpg"} active={onScreen} cycle={cycle} cell={cell} />}
       </div>
 
       {/* a floor of dark for the type to stand on */}
@@ -82,7 +94,7 @@ export default function Slide({ id, index, label, src, cycle = false, cell, line
           {line}
         </h2>
         {sub && (
-          <div style={{ fontFamily: mono, fontSize: 12, letterSpacing: ".18em", lineHeight: 1.8, color: "rgba(242,239,231,.6)", maxWidth: "52ch" }}>
+          <div style={{ fontFamily: mono, fontSize: 12, letterSpacing: ".18em", lineHeight: 1.8, color: "rgba(242,239,231,.6)", maxWidth: "66ch" }}>
             {sub}
           </div>
         )}

@@ -55,6 +55,10 @@ html {
   text-rendering: optimizeLegibility;
 }
 
+/* Homepage chapters snap into place; the page sets data-snap on <html> while mounted. */
+html[data-snap="y"] { scroll-snap-type: y mandatory; }
+@media (prefers-reduced-motion: reduce) { html[data-snap="y"] { scroll-snap-type: none; } }
+
 /* Intro scroll lock - applied during typewriter sequence */
 html.intro-locked,
 html.intro-locked body {
