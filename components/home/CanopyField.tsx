@@ -19,6 +19,16 @@ const FILL = " .:-=+*#@";
 const EDGE = "|/-\\";
 const Q = 5; // color levels per channel
 
+/* The color cycle: the canopy's palette travels through these, in order, forever. */
+const CYCLE: [number, number, number][] = [
+  [0.45, 0.95, 0.42], // green
+  [0.98, 0.86, 0.32], // yellow
+  [0.38, 0.62, 1.0],  // blue
+  [1.0, 0.58, 0.25],  // orange
+];
+const CYCLE_SECONDS = 12; // per color
+const smooth = (x: number) => x * x * (3 - 2 * x);
+
 type Props = { src?: string; className?: string };
 
 export default function CanopyField({ src = "/canopy.jpg", className }: Props) {
@@ -90,6 +100,10 @@ export default function CanopyField({ src = "/canopy.jpg", className }: Props) {
       mouse.vx = mouse.x - mouse.px; mouse.vy = mouse.y - mouse.py; mouse.px = mouse.x; mouse.py = mouse.y;
       const R = Math.min(W, H) * 0.2;
       ctx.globalAlpha = fade;
+      const ph = (t / CYCLE_SECONDS) % CYCLE.length;
+      const ci = Math.floor(ph), cf = smooth(ph - ci);
+      const A = CYCLE[ci], B = CYCLE[(ci + 1) % CYCLE.length];
+      const tr = A[0] + (B[0] - A[0]) * cf, tg = A[1] + (B[1] - A[1]) * cf, tb = A[2] + (B[2] - A[2]) * cf;
 
       for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
         const k = r * cols + c, cl = cells[k];
@@ -123,7 +137,9 @@ export default function CanopyField({ src = "/canopy.jpg", className }: Props) {
         rr = Math.max(0, m + (rr - m) * 1.7); gg = Math.max(0, m + (gg - m) * 1.7); bb = Math.max(0, m + (bb - m) * 1.7);
         const v = 0.3 + 0.7 * Math.pow(L, 0.7);
         const mx = Math.max(rr, gg, bb, 0.001);
-        rr = Math.min(1, rr / mx * v); gg = Math.min(1, gg / mx * v); bb = Math.min(1, bb / mx * v);
+        rr = rr / mx * v; gg = gg / mx * v; bb = bb / mx * v;
+        // 70% toward the cycle color, keeping the photo's own light and shadow
+        rr = Math.min(1, rr * 0.3 + v * tr * 0.7); gg = Math.min(1, gg * 0.3 + v * tg * 0.7); bb = Math.min(1, bb * 0.3 + v * tb * 0.7);
         ctx.drawImage(sprite(chr, Math.round(rr * (Q - 1)), Math.round(gg * (Q - 1)), Math.round(bb * (Q - 1))), px + ox, py + oy, cw, ch);
       }
       ctx.globalAlpha = 1;
