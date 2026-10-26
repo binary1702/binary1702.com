@@ -5,6 +5,7 @@ import HomeNav from "@/components/home/HomeNav";
 import WorkflowVisual from "@/components/home/WorkflowVisual";
 import AssessmentForm from "@/components/home/AssessmentForm";
 import AsciiField from "@/components/home/AsciiField";
+import CanopyOpening from "@/components/home/CanopyOpening";
 
 /* ------------------------------------------------------------------
    Binary 1702 — enterprise homepage.

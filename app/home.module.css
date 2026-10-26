@@ -63,6 +63,9 @@
   padding-right: var(--gutter);
 }
 
+/* The opening (fixed canopy) covers the first viewport; this spacer holds the page beneath it. */
+.opening { height: 100dvh; }
+
 /* ---------- Nav ---------- */
 .nav {
   position: sticky;
