@@ -1,9 +1,36 @@
 "use client";
 
+import type { CSSProperties, MouseEvent } from "react";
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 
 type Props = {
   onEnter: () => void;
+};
+
+/* One visual primitive shared by all three gates so they read as peers. */
+const gateStyle: CSSProperties = {
+  background: "none",
+  border: "1px solid var(--room-muted)",
+  color: "var(--room-fg)",
+  fontSize: 15,
+  fontFamily: "inherit",
+  letterSpacing: "0.3em",
+  textTransform: "uppercase",
+  textDecoration: "none",
+  padding: "14px 28px",
+  display: "block",
+  textAlign: "center",
+  cursor: "pointer",
+  transition: "border-color 0.2s ease, color 0.2s ease",
+};
+
+const gateHoverIn = (e: MouseEvent<HTMLElement>) => {
+  e.currentTarget.style.borderColor = "var(--room-fg)";
+};
+
+const gateHoverOut = (e: MouseEvent<HTMLElement>) => {
+  e.currentTarget.style.borderColor = "var(--room-muted)";
 };
 
 export default function WelcomeModal({ onEnter }: Props) {
@@ -197,54 +224,40 @@ export default function WelcomeModal({ onEnter }: Props) {
           <span style={{ color: "#6B9E6B" }}>110</span>
         </div>
 
-        {/* Enter button + Client Login */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 15, marginTop: 10 }}>
-          <button
-            onClick={handleEnter}
-            style={{
-              background: "none",
-              border: "1px solid var(--room-muted)",
-              color: "var(--room-fg)",
-              fontSize: 18,
-              letterSpacing: "0.3em",
-              textTransform: "uppercase",
-              padding: "15px 40px",
-              cursor: "pointer",
-              transition: "border-color 0.2s ease, color 0.2s ease",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "var(--room-fg)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "var(--room-muted)";
-            }}
-          >
-            Enter
-          </button>
+        {/* Three gates: Login (external) / Experiments (route) / Showcase (enter flow) */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "stretch",
+            gap: 15,
+            marginTop: 10,
+          }}
+        >
           <a
             href="https://portal.binary1702.com"
-            style={{
-              background: "none",
-              border: "1px solid rgba(255,255,255,0.25)",
-              color: "rgba(255,255,255,0.5)",
-              fontSize: 12,
-              letterSpacing: "0.2em",
-              textTransform: "uppercase",
-              textDecoration: "none",
-              padding: "10px 25px",
-              transition: "border-color 0.2s ease, color 0.2s ease",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "rgba(255,255,255,0.5)";
-              e.currentTarget.style.color = "rgba(255,255,255,0.8)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)";
-              e.currentTarget.style.color = "rgba(255,255,255,0.5)";
-            }}
+            style={gateStyle}
+            onMouseEnter={gateHoverIn}
+            onMouseLeave={gateHoverOut}
           >
-            Client Login
+            Login
           </a>
+          <Link
+            href="/experiments"
+            style={gateStyle}
+            onMouseEnter={gateHoverIn}
+            onMouseLeave={gateHoverOut}
+          >
+            Experiments
+          </Link>
+          <button
+            onClick={handleEnter}
+            style={gateStyle}
+            onMouseEnter={gateHoverIn}
+            onMouseLeave={gateHoverOut}
+          >
+            Showcase
+          </button>
         </div>
       </div>
     </div>

@@ -2,11 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 
 type FormData = {
+  kind?: "assessment" | "conversation";
   name: string;
   business?: string;
+  role?: string;
   email: string;
   concern: string;
   decider?: string;
+  systems?: string;
+  outcome?: string;
 };
 
 const transporter = nodemailer.createTransport({
@@ -18,49 +22,57 @@ const transporter = nodemailer.createTransport({
 });
 
 async function sendEmail(data: FormData) {
-  const { name, business, email, concern, decider } = data;
+  const { name, business, role, email, concern, decider, systems, outcome } = data;
+  const isAssessment = data.kind === "assessment";
+  const heading = isAssessment ? "Enterprise Workflow Assessment request" : "New conversation request";
 
   const html = `
-    <h2>New conversation request</h2>
+    <h2>${heading}</h2>
     <p><strong>Name:</strong> ${name}</p>
-    ${business ? `<p><strong>Business:</strong> ${business}</p>` : ""}
+    ${business ? `<p><strong>Company:</strong> ${business}</p>` : ""}
+    ${role ? `<p><strong>Role:</strong> ${role}</p>` : ""}
     <p><strong>Email:</strong> ${email}</p>
-    <p><strong>What's happening:</strong></p>
+    <p><strong>${isAssessment ? "Operational problem" : "What's happening"}:</strong></p>
     <p>${concern.replace(/\n/g, "<br>")}</p>
+    ${systems ? `<p><strong>Systems / departments:</strong> ${systems}</p>` : ""}
+    ${outcome ? `<p><strong>What "fixed" looks like:</strong> ${outcome}</p>` : ""}
     ${decider ? `<p><strong>Decision maker:</strong> ${decider}</p>` : ""}
   `;
 
   const text = `
-New conversation request
+${heading}
 
 Name: ${name}
-${business ? `Business: ${business}\n` : ""}Email: ${email}
+${business ? `Company: ${business}\n` : ""}${role ? `Role: ${role}\n` : ""}Email: ${email}
 
-What's happening:
+${isAssessment ? "Operational problem" : "What's happening"}:
 ${concern}
-${decider ? `\nDecision maker: ${decider}` : ""}
+${systems ? `\nSystems / departments: ${systems}` : ""}${outcome ? `\nWhat "fixed" looks like: ${outcome}` : ""}${decider ? `\nDecision maker: ${decider}` : ""}
   `.trim();
 
   await transporter.sendMail({
     from: process.env.GMAIL_USER,
     to: process.env.GMAIL_USER,
     replyTo: email,
-    subject: `New lead: ${name}${business ? ` (${business})` : ""}`,
+    subject: `${isAssessment ? "Assessment request" : "New lead"}: ${name}${business ? ` (${business})` : ""}`,
     text,
     html,
   });
 }
 
 async function sendSlack(data: FormData) {
-  const { name, business, email, concern, decider } = data;
+  const { name, business, role, email, concern, decider, systems, outcome } = data;
+  const isAssessment = data.kind === "assessment";
 
   const webhookUrl = process.env.SLACK_WEBHOOK_URL;
   if (!webhookUrl) return;
 
   const text = [
-    `✨ *Request Received!*`,
-    `🎉 *${name}*${business ? ` · ${business}` : ""} — ${email}`,
+    isAssessment ? `🏢 *Assessment request*` : `✨ *Request Received!*`,
+    `🎉 *${name}*${role ? ` (${role})` : ""}${business ? ` · ${business}` : ""} — ${email}`,
     `🗣️ ${concern}`,
+    systems ? `🧩 ${systems}` : "",
+    outcome ? `🎯 ${outcome}` : "",
     decider ? `🫂 ${decider}` : "",
   ].filter(Boolean).join("\n");
 

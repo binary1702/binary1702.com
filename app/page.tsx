@@ -1,723 +1,362 @@
-"use client";
-
-import type { CSSProperties } from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
-import { useEffect, useState, useRef, useCallback } from "react";
-import SiteHeader from "@/components/SiteHeader";
-import SiteFooter from "@/components/SiteFooter";
-import TypeWriter from "@/components/TypeWriter";
-import VideoBackground from "@/components/VideoBackground";
-import WelcomeModal from "@/components/WelcomeModal";
-import GlobalMuteButton from "@/components/GlobalMuteButton";
-import { useAudioContext } from "@/components/AudioProvider";
-import { useActiveSection } from "@/hooks/useActiveSection";
-import { useSectionNavigation } from "@/hooks/useSectionNavigation";
+import s from "./home.module.css";
+import HomeNav from "@/components/home/HomeNav";
+import WorkflowVisual from "@/components/home/WorkflowVisual";
+import AssessmentForm from "@/components/home/AssessmentForm";
+import AsciiField from "@/components/home/AsciiField";
 
 /* ------------------------------------------------------------------
-   Style primitives — the invariant structures every section reuses.
-   Spacing multiplies against --pace (globals.css) so the whole page's
-   vertical rhythm can be retuned from one variable.
+   Binary 1702 — enterprise homepage.
+
+   Six sections, in the order an operations executive decides:
+   recognition → possibility → capability → evidence → investment → action.
+   Server component; the three interactive pieces are client components.
+   The previous homepage lives on at /threshold.
    ------------------------------------------------------------------ */
-const serif = "'Playfair Display',Georgia,serif";
 
-const sectionGrid = (padTop: number, padBottom: number): CSSProperties => ({
-  maxWidth: 1320,
-  margin: "0 auto",
-  padding: `calc(${padTop}px * var(--pace)) clamp(24px,5.5vw,96px) calc(${padBottom}px * var(--pace))`,
-  display: "grid",
-  gridTemplateColumns: "minmax(0,10ch) minmax(0,1fr)",
-  gap: "clamp(16px,4vw,48px)",
-  minHeight: "100vh",
-  boxSizing: "border-box",
-});
-
-const numeral = (paddingTop: string, color = "var(--sig-text)"): CSSProperties => ({
-  fontSize: 15,
-  fontWeight: 600,
-  letterSpacing: "0.12em",
-  color,
-  paddingTop,
-});
-
-/* Body copy, large → small */
-const bodyLg: CSSProperties = {
-  margin: 0,
-  fontSize: "clamp(1.1rem,1.32vw,1.3rem)",
-  lineHeight: 1.72,
-  letterSpacing: "0.004em",
-  color: "var(--graphite)",
-  textWrap: "pretty",
+export const metadata: Metadata = {
+  title: "Binary 1702 — Enterprise Technology Transformation",
+  description:
+    "Binary 1702 transforms fragmented enterprise operations into connected digital systems. Workflow transformation, systems integration, and operational intelligence for operations-intensive organizations.",
 };
 
-const bodyMd: CSSProperties = {
-  margin: 0,
-  fontSize: "clamp(1.06rem,1.24vw,1.2rem)",
-  lineHeight: 1.72,
-  letterSpacing: "0.004em",
-  color: "var(--graphite)",
-  textWrap: "pretty",
-};
+const capabilities = [
+  {
+    title: "Workflow transformation",
+    body: "Connected processes with approvals, routing, and automation across departments.",
+  },
+  {
+    title: "Systems integration",
+    body: "Your existing applications and data working together — without replacing the ERP.",
+  },
+  {
+    title: "Enterprise applications",
+    body: "Purpose-built software for the operations your off-the-shelf tools don't handle.",
+  },
+  {
+    title: "Operational intelligence",
+    body: "Dashboards and reporting tied to the metrics leadership actually manages.",
+  },
+  {
+    title: "AI in the workflow",
+    body: "Practical AI placed inside the process: classification, extraction, drafting, exception handling.",
+  },
+];
 
-/* "The Sequence" secondary rows (Build / Care) */
-const seqRowLink: CSSProperties = {
-  justifySelf: "start",
-  fontFamily: serif,
-  fontSize: "clamp(1.3rem,1.7vw,1.55rem)",
-  lineHeight: 1.1,
-  letterSpacing: "-0.012em",
-};
+const work = [
+  {
+    flagship: true,
+    tag: "Flagship demonstration",
+    kind: "demo",
+    title: "Warehouse-to-field equipment accountability",
+    problem: "Equipment leaves the warehouse and no one can prove where it went.",
+    solution:
+      "Order → warehouse verification → handover → technician confirmation → installation evidence → manager approval.",
+    href: "#demo",
+    cta: "See the demo",
+  },
+  {
+    flagship: false,
+    tag: "Working application",
+    kind: "app",
+    title: "Operational workflow system",
+    problem: "Multi-step operational processes tracked by hand across roles.",
+    solution: "Role-based workflows with approvals, status, and a full history of who did what, when.",
+    href: "https://kuyakaltas.com",
+    cta: "View",
+  },
+  {
+    flagship: false,
+    tag: "Working application",
+    kind: "app",
+    title: "Financial visibility",
+    problem: "Finance learns about operations after the fact.",
+    solution: "Operational data surfaced as financial reporting leadership can act on.",
+    href: "https://financials.binary1702.com",
+    cta: "View",
+  },
+];
 
-const seqRowText: CSSProperties = {
-  margin: 0,
-  maxWidth: "36ch",
-  fontSize: "clamp(0.98rem,1.1vw,1.06rem)",
-  lineHeight: 1.7,
-  letterSpacing: "0.004em",
-  color: "var(--graphite)",
-  textWrap: "pretty",
-};
+const stairs = [
+  {
+    stage: "Diagnose",
+    name: "Enterprise Workflow Assessment",
+    price: "$10K–$25K",
+    unit: "fixed scope",
+    body:
+      "Process map, solution architecture, transformation roadmap, and a bounded working prototype of the fix — built on sample data, configured to your workflow.",
+  },
+  {
+    stage: "Prove",
+    name: "Department Modernization Pilot",
+    price: "$25K–$75K",
+    unit: "one department",
+    body: "One production-bounded workflow in one department, with success criteria agreed before we start.",
+  },
+  {
+    stage: "Transform",
+    name: "Multi-System Transformation",
+    price: "$100K–$300K+",
+    unit: "quoted after assessment",
+    body: "Integration and modernization across teams, systems, and departments, delivered in phases with governance.",
+  },
+  {
+    stage: "Evolve",
+    name: "Ongoing Engineering & Support",
+    price: "$5K–$20K+",
+    unit: "per month",
+    body: "Monitoring, improvements, integrations, and a team that already knows your systems.",
+  },
+];
 
-/* "Where You Fit" checklist rows */
-const fitItem: CSSProperties = {
-  margin: 0,
-  padding: "26px 0",
-  borderBottom: "1px solid var(--rule)",
-  fontSize: "clamp(1.1rem,1.32vw,1.3rem)",
-  lineHeight: 1.54,
-  letterSpacing: "0.004em",
-  textWrap: "pretty",
-  color: "#F5F2EA",
-};
-
-// Network speed detection for preload decisions
-function getNetworkSpeed(): "slow" | "medium" | "fast" {
-  if (typeof navigator === "undefined") return "fast";
-  const conn = (navigator as any).connection;
-  if (!conn) return "fast";
-  if (conn.saveData) return "slow";
-  const type = conn.effectiveType;
-  if (type === "slow-2g" || type === "2g") return "slow";
-  if (type === "3g") return "medium";
-  return "fast";
-}
-
-export default function Home() {
-  const [introComplete, setIntroComplete] = useState(false);
-  const [introStarted, setIntroStarted] = useState(false);
-  const [typewriterVisible, setTypewriterVisible] = useState(false);
-  const activeSection = useActiveSection();
-  const { hasEntered, skippedModal, enter, playTypewriter, stopTypewriterAndPlayMusic } = useAudioContext();
-
-  // Preload state: which sections should load their videos
-  const [preloadSections, setPreloadSections] = useState<Set<string>>(new Set());
-  const observerRef = useRef<IntersectionObserver | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  // Check if a section's video should start loading
-  const shouldPreload = useCallback((sectionId: string) => {
-    return preloadSections.has(sectionId);
-  }, [preloadSections]);
-
-  // Force scroll to top on initial load
-  useEffect(() => {
-    window.scrollTo(0, 0);
-    document.documentElement.scrollTop = 0;
-    document.body.scrollTop = 0;
-  }, []);
-
-  // Lock scroll during intro sequence
-  useEffect(() => {
-    document.documentElement.classList.toggle("intro-locked", !introComplete);
-    return () => {
-      document.documentElement.classList.remove("intro-locked");
-    };
-  }, [introComplete]);
-
-  // Auto-start typewriter sequence if modal was skipped (returning visitor)
-  useEffect(() => {
-    if (skippedModal && !introStarted) {
-      setTypewriterVisible(true);
-      setIntroStarted(true);
-      playTypewriter();
-      // Returning visitor: preload all sections immediately
-      setPreloadSections(new Set(["01 Threshold", "02 The Named Thing", "03 The Sequence", "04 The Door"]));
-    }
-  }, [skippedModal, introStarted, playTypewriter]);
-
-  const handleEnter = () => {
-    enter();
-    // Fade in the typewriter area, then start typing
-    setTypewriterVisible(true);
-    setTimeout(() => {
-      setIntroStarted(true);
-      playTypewriter();
-    }, 800);
-
-    // Start preloading based on network speed
-    const speed = getNetworkSpeed();
-    const sectionsToPreload = ["01 Threshold"];
-
-    if (speed === "medium" || speed === "fast") {
-      sectionsToPreload.push("02 The Named Thing");
-    }
-    if (speed === "fast") {
-      sectionsToPreload.push("03 The Sequence");
-    }
-
-    setPreloadSections(new Set(sectionsToPreload));
-  };
-
-  const handleIntroComplete = () => {
-    setIntroComplete(true);
-    setTimeout(() => {
-      stopTypewriterAndPlayMusic();
-    }, 750);
-  };
-
-  // Rolling prefetch: when user approaches a section, preload the next one
-  useEffect(() => {
-    if (!introComplete || !containerRef.current) return;
-
-    // Clean up old observer
-    if (observerRef.current) {
-      observerRef.current.disconnect();
-    }
-
-    const sections = containerRef.current.querySelectorAll("section[data-screen-label]");
-    const sectionOrder = ["01 Threshold", "02 The Named Thing", "03 The Sequence", "04 The Door"];
-
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const currentId = entry.target.getAttribute("data-screen-label");
-            if (!currentId) return;
-
-            const currentIndex = sectionOrder.indexOf(currentId);
-            if (currentIndex === -1) return;
-
-            // Preload next section
-            const nextIndex = currentIndex + 1;
-            if (nextIndex < sectionOrder.length) {
-              setPreloadSections((prev) => {
-                const next = new Set(prev);
-                next.add(sectionOrder[nextIndex]);
-                return next;
-              });
-            }
-          }
-        });
-      },
-      { rootMargin: "100% 0px" } // Start loading ~1 viewport ahead
-    );
-
-    sections.forEach((section) => observerRef.current?.observe(section));
-
-    return () => observerRef.current?.disconnect();
-  }, [introComplete]);
-
-  // Arrow key navigation between sections
-  useSectionNavigation();
-
+export default function HomePage() {
   return (
-    <div
-      ref={containerRef}
-      style={{
-        background: introComplete ? "var(--paper)" : "#000",
-        fontFamily: "'Archivo Narrow',system-ui,sans-serif",
-        fontWeight: 400,
-        color: "var(--ink)",
-        overflowX: "hidden",
-        minHeight: "100vh",
-        scrollSnapType: "y mandatory",
-        overflowY: introComplete ? "scroll" : "hidden",
-        height: "100vh",
-        transition: "background 2.5s ease-out",
-      }}
-    >
-      <SiteHeader introComplete={introComplete} />
+    <div className={s.page}>
+      <HomeNav />
 
-      {/* 01 — Threshold */}
-      <section
-        data-screen-label="01 Threshold"
-        data-theme="dark"
-                style={{
-          position: "relative",
-          scrollSnapAlign: "start",
-          height: "100dvh",
-          boxSizing: "border-box",
-          overflow: "hidden",
-        }}
-      >
-        {/* Video background */}
-        <VideoBackground
-          src="/movies/homepage/desktop/01-cityscapes.webm"
-          mobileSrc="/movies/homepage/mobile/01-cityscapes.webm"
-          poster="/poster/cityscape.webp"
-          preload={shouldPreload("01 Threshold") ? "auto" : "none"}
-          paused={!introComplete || activeSection !== "01 Threshold"}
-        />
-
-        {/* Dark overlay */}
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            background: introComplete ? "rgba(0,0,0,0.35)" : "rgba(0,0,0,1)",
-            zIndex: 1,
-            transition: "background 2.5s ease-out",
-          }}
-        />
-
-        {/* Content */}
-        <div
-          style={{
-            position: "relative",
-            zIndex: 2,
-            maxWidth: 1320,
-            margin: "0 auto",
-            padding: "calc(190px * var(--pace)) clamp(24px,5.5vw,96px) clamp(80px, 12vh, 120px)",
-            display: "grid",
-            gridTemplateColumns: "minmax(0,10ch) minmax(0,1fr)",
-            gap: "clamp(16px,4vw,48px)",
-            height: "100%",
-            boxSizing: "border-box",
-          }}
-        >
-          <div
-            style={{
-              ...numeral("1.1em", "rgba(255,255,255,0.6)"),
-              opacity: introComplete ? 1 : 0,
-              transition: "opacity 2.5s ease-out 0.5s",
-            }}
-          >
-            01
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-            <h1
-              style={{
-                margin: 0,
-                fontFamily: serif,
-                fontWeight: 400,
-                fontSize: "clamp(3rem,9.6vw,9.4rem)",
-                lineHeight: 0.98,
-                letterSpacing: "-0.022em",
-                whiteSpace: "nowrap",
-                color: "#F5F2EA",
-                opacity: typewriterVisible ? 1 : 0,
-                transition: "opacity 1.5s ease-out",
-              }}
-            >
-              <TypeWriter
-                segments={[
-                  { text: "Let's begin", pauseBlinks: 3.5 },
-                  { text: "\nwith clarity.", pauseBlinks: 0 },
-                ]}
-                speed={70}
-                delay={1800}
-                start={introStarted}
-                onComplete={handleIntroComplete}
-              />
-            </h1>
-            <p
-              style={{
-                ...bodyLg,
-                maxWidth: "42ch",
-                fontSize: "clamp(1.5rem,1.4vw,1.38rem)",
-                marginTop: "clamp(48px, 8vh, 120px)",
-                color: "rgba(255,255,255,0.8)",
-                opacity: introComplete ? 1 : 0,
-                transition: "opacity 2.5s ease-out 0.5s",
-              }}
-            >
-            Complex decisions deserve clear thinking.
-            Everything else follows.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* 02 — The Named Thing */}
-      <section
-        data-screen-label="02 The Named Thing"
-        data-theme="dark"
-                style={{
-          position: "relative",
-          scrollSnapAlign: "start",
-          minHeight: "100vh",
-          overflow: "hidden",
-        }}
-      >
-        {/* Video background */}
-        <VideoBackground
-          src="/movies/homepage/desktop/02-architectural.webm"
-          mobileSrc="/movies/homepage/mobile/02-architectural.webm"
-          poster="/poster/architecture.webp"
-          preload={shouldPreload("02 The Named Thing") ? "auto" : "none"}
-          paused={activeSection !== "02 The Named Thing"}
-        />
-
-        {/* Dark overlay */}
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            background: "rgba(0,0,0,0.5)",
-            zIndex: 1,
-          }}
-        />
-
-        {/* Content */}
-        <div
-          style={{
-            ...sectionGrid(96, 110),
-            position: "relative",
-            zIndex: 2,
-          }}
-        >
-          <div style={numeral("0.9em", "rgba(255,255,255,0.6)")}>02</div>
-          <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: "clamp(32px,5vw,80px)", alignItems: "center" }}>
-            <h2
-              style={{
-                margin: 0,
-                fontFamily: serif,
-                fontWeight: 400,
-                fontSize: "clamp(1.95rem,4.4vw,3.8rem)",
-                lineHeight: 1.06,
-                letterSpacing: "-0.018em",
-                maxWidth: "16ch",
-                textWrap: "balance",
-                color: "#F5F2EA",
-              }}
-            >
-              Most work fails before it begins.
-            </h2>
+      {/* 01 — Hero */}
+      <section className={s.hero} id="problem" aria-labelledby="hero-title">
+        <div className={s.heroGlow} aria-hidden="true" />
+        <AsciiField />
+        <div className={s.wrap}>
+          <div className={s.heroGrid}>
             <div>
-              <p style={{ ...bodyLg, margin: 0, color: "rgba(255,255,255,0.8)" }}>
-                Technology rarely fails. Decisions do.
+              <p className={s.eyebrow}>Enterprise Technology Transformation</p>
+              <h1 className={s.h1} id="hero-title">
+                Your business has systems. <em>Do they work together?</em>
+              </h1>
+              <p className={s.lede}>
+                Sales, warehouse, field teams, and finance each run on their own tools. Work moves
+                between them through email, spreadsheets, and memory — and that&apos;s where delays,
+                errors, and blind spots live.
               </p>
-              <p style={{ ...bodyLg, margin: "1.5em 0 0", color: "rgba(255,255,255,0.8)" }}>
-                Most technology is built to answer the wrong question.<br></br>
-                Perfectly executed.
-                Beautifully designed.<br></br>
-                But entirely unnecessary.
+              <p className={s.heroStatement}>
+                We transform fragmented operations into connected digital systems.
               </p>
-              <p style={{ ...bodyLg, margin: "1.5em 0 0", color: "#F5F2EA" }}>
-                We think the decision deserves more attention than the implementation.
-              </p>
-              <p style={{ ...bodyLg, margin: "1.5em 0 0", color: "#F5F2EA" }}>
-                And that&apos;s where we come in.
-              </p>
+              <div className={s.btnRow}>
+                <a href="#assessment" className={s.btn}>
+                  Request an Enterprise Workflow Assessment
+                </a>
+                <a href="#transformation" className={`${s.btn} ${s.btnGhost}`}>
+                  See the transformation ↓
+                </a>
+              </div>
+            </div>
+
+            <div aria-hidden="true">
+              <div className={s.nodes}>
+                {[
+                  ["Sales", "Quotes in a CRM. Approvals in email."],
+                  ["Warehouse", "Inventory in one system. Handovers on paper."],
+                  ["Field", "Completion evidence on a technician's phone."],
+                  ["Finance", "Invoices wait for someone to confirm the job."],
+                ].map(([label, sub]) => (
+                  <div className={s.node} key={label}>
+                    <span className={s.nodeDot} />
+                    <p className={s.nodeLabel}>{label}</p>
+                    <p className={s.nodeSub}>{sub}</p>
+                  </div>
+                ))}
+              </div>
+              <p className={s.nodesCaption}>Four systems. No shared record of the work between them.</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 03 — The Sequence */}
-      <section
-        data-screen-label="03 The Sequence"
-        data-theme="dark"
-                style={{
-          position: "relative",
-          scrollSnapAlign: "start",
-          minHeight: "100vh",
-          overflow: "hidden",
-        }}
-      >
-        {/* Video background */}
-        <VideoBackground
-          src="/movies/homepage/desktop/03-diagnosis.webm"
-          mobileSrc="/movies/homepage/mobile/03-diagnosis.webm"
-          poster="/poster/diagnosis.webp"
-          preload={shouldPreload("03 The Sequence") ? "auto" : "none"}
-          paused={activeSection !== "03 The Sequence"}
-        />
-
-        {/* Dark overlay */}
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            background: "rgba(0,0,0,0.5)",
-            zIndex: 1,
-          }}
-        />
-
-        {/* Content */}
-        <div
-          style={{
-            ...sectionGrid(120, 150),
-            position: "relative",
-            zIndex: 2,
-          }}
-        >
-          <div style={numeral("0.6em", "rgba(255,255,255,0.6)")}>03</div>
-          <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: "clamp(80px,10vw,160px)", alignItems: "center" }}>
+      {/* 02 — Transformation */}
+      <section className={`${s.section} ${s.sectionAlt}`} id="transformation" aria-labelledby="transformation-title">
+        <div className={s.wrap}>
+          <div className={s.twoCol}>
             <div>
-              <Link
-                href="/services/diagnose"
-                className="rule-link"
-                style={{
-                  display: "inline-block",
-                  fontFamily: serif,
-                  fontSize: "clamp(3.2rem,9vw,8.2rem)",
-                  lineHeight: 0.96,
-                  letterSpacing: "-0.024em",
-                  whiteSpace: "nowrap",
-                  color: "#F5F2EA",
-                }}
-              >
-                Diagnose
-              </Link>
-
-              <p
-                style={{
-                  margin: "calc(20px * var(--pace)) 0 0",
-                  fontSize: 18,
-                  fontWeight: 900,
-                  letterSpacing: "0.2em",
-                  textTransform: "uppercase",
-                  color: "#C4B08A",
-                }}
-              >
-                From $5,000
-              </p>
-
-              <p
-                style={{
-                  margin: "calc(32px * var(--pace)) 0 0",
-                  maxWidth: "20ch",
-                  fontFamily: serif,
-                  fontSize: "clamp(1.7rem,3.4vw,2.9rem)",
-                  lineHeight: 1.16,
-                  letterSpacing: "-0.016em",
-                  textWrap: "balance",
-                  color: "#F5F2EA",
-                }}
-              >
-                Every engagement starts here.
-              </p>
-
-              <p style={{ ...bodyMd, margin: "calc(40px * var(--pace)) 0 0", maxWidth: "42ch", color: "rgba(255,255,255,0.8)" }}>
-              Before we change the business, we understand it.
-              </p>
-
-              <p
-                data-principle=""
-                style={{
-                  margin: "calc(50px * var(--pace)) 0 0",
-                  maxWidth: "28ch",
-                  fontFamily: serif,
-                  fontStyle: "italic",
-                  fontSize: "clamp(1.4rem,2.3vw,1.95rem)",
-                  lineHeight: 1.34,
-                  letterSpacing: "-0.008em",
-                  textWrap: "pretty",
-                  color: "rgba(255,255,255,0.8)",
-                }}
-              >
-                Sometimes the answer is that nothing should be built.
-              </p>
-            </div>
-
-            <div className="hide-on-mobile" style={{ display: "flex", flexDirection: "column", gap: "calc(36px * var(--pace))" }}>
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: 20,
-                  fontWeight: 400,
-                  letterSpacing: "0.15em",
-                  textTransform: "uppercase",
-                  textAlign: "center",
-                  color: "rgba(255,255,255,0.8)",
-                }}
-              >
-                Core Services
-              </p>
-              <div style={{ paddingTop: "calc(10px * var(--pace))" }}>
-                <span style={{ ...seqRowLink, color: "#D88888" }}>
-                  01. Build
-                </span>
-                <p style={{ margin: "0.8em 0 0", color: "rgba(255,255,255,0.8)" }}>
-                When something needs to be made.
-                </p>
-              </div>
-
-              <div style={{ borderTop: "1px solid rgba(255,255,255,0.2)", paddingTop: "calc(34px * var(--pace))" }}>
-                <span style={{ ...seqRowLink, color: "#8AB8D0" }}>
-                  02. Care
-                </span>
-                <p style={{ margin: "0.8em 0 0", color: "rgba(255,255,255,0.8)" }}>
-                When something needs to be maintained.
-                </p>
-              </div>
-
-              <div style={{ borderTop: "1px solid rgba(255,255,255,0.2)", paddingTop: "calc(34px * var(--pace))" }}>
-                <span style={{ ...seqRowLink, color: "#8AC98A" }}>
-                  03. Grow
-                </span>
-                <p style={{ margin: "0.8em 0 0", color: "rgba(255,255,255,0.8)" }}>
-                  When something needs to reach more people.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 04 — The Door */}
-      <section
-        data-screen-label="04 The Door"
-        data-theme="dark"
-        style={{
-          position: "relative",
-          scrollSnapAlign: "start",
-          height: "100vh",
-          overflow: "hidden",
-          boxSizing: "border-box",
-        }}
-      >
-        {/* Video background */}
-        <VideoBackground
-          src="/movies/homepage/desktop/04-conversation.webm"
-          mobileSrc="/movies/homepage/mobile/04-conversation.webm"
-          poster="/poster/coffee.webp"
-          preload={shouldPreload("04 The Door") ? "auto" : "none"}
-          paused={activeSection !== "04 The Door"}
-        />
-
-        {/* Dark overlay */}
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            background: "rgba(0,0,0,0.5)",
-            zIndex: 1,
-          }}
-        />
-
-        {/* Content */}
-        <div
-          style={{
-            ...sectionGrid(140, 80),
-            position: "relative",
-            zIndex: 2,
-          }}
-        >
-          <div style={numeral("1.4em", "rgba(255,255,255,0.6)")}>04</div>
-          <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: "clamp(48px,6vw,96px)", alignItems: "start" }}>
-            <div>
-              <h2
-                style={{
-                  margin: "0 0 calc(20px * var(--pace))",
-                  fontFamily: serif,
-                  fontWeight: 400,
-                  fontSize: "clamp(1.7rem,3.2vw,2.8rem)",
-                  lineHeight: 1.1,
-                  letterSpacing: "-0.016em",
-                  maxWidth: "20ch",
-                  textWrap: "balance",
-                  color: "#F5F2EA",
-                }}
-              >
-              Before we begin...
+              <p className={s.eyebrow}>The problem, made visible</p>
+              <h2 className={s.h2} id="transformation-title">
+                Disconnected systems create invisible costs.
               </h2>
-              <p
-                style={{
-                  ...bodyMd,
-                  margin: "0 0 calc(24px * var(--pace))",
-                  color: "rgba(255,255,255,0.8)",
-                  fontStyle: "italic",
-                }}
-              >
-                There are a few things the best partnerships have in common.
+              <p className={s.lede}>
+                None of your systems are broken. The cost lives in the handoffs between them.
               </p>
-              <div style={{ borderTop: "1px solid rgba(255,255,255,0.3)" }}>
-                <p style={{ ...fitItem, borderBottomColor: "rgba(255,255,255,0.2)" }}><span style={{ marginRight: "0.5em" }}>›</span>The decision-maker is in the room.</p>
-                <p style={{ ...fitItem, borderBottomColor: "rgba(255,255,255,0.2)" }}><span style={{ marginRight: "0.5em" }}>›</span>We&apos;re allowed to understand your business and processes.</p>
-                <p style={{ ...fitItem, borderBottomColor: "rgba(255,255,255,0.2)" }}><span style={{ marginRight: "0.5em" }}>›</span>Assumptions can be challenged.</p>
-                <p style={{ ...fitItem, borderBottomColor: "rgba(255,255,255,0.2)" }}><span style={{ marginRight: "0.5em" }}>›</span>Evidence matters more than ego.</p>
-              </div>
+
+              <table className={s.compare}>
+                <thead>
+                  <tr>
+                    <th scope="col">Before</th>
+                    <th scope="col">After</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Requests move through email, chat, and spreadsheets</td>
+                    <td>One shared workflow routes work between your existing systems</td>
+                  </tr>
+                  <tr>
+                    <td>Approvals are unclear; exceptions surface late</td>
+                    <td>Status, ownership, and exceptions are visible as they happen</td>
+                  </tr>
+                  <tr>
+                    <td>Field completion evidence is hard to find</td>
+                    <td>Photos, signatures, and timestamps attach to the job</td>
+                  </tr>
+                  <tr>
+                    <td>Management hears about delays from customers</td>
+                    <td>Management sees bottlenecks and intervenes early</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <blockquote className={s.flagship}>
+                Who had the equipment, when did they receive it, and where did it go?
+                <small>When the answer takes a phone call, the system isn&apos;t connected.</small>
+              </blockquote>
             </div>
-            <div className="hide-on-mobile">
-              <h2
-                style={{
-                  margin: 0,
-                  fontFamily: serif,
-                  fontWeight: 400,
-                  fontSize: "clamp(2rem,4.5vw,4.2rem)",
-                  lineHeight: 1.1,
-                  letterSpacing: "-0.018em",
-                  maxWidth: "13ch",
-                  textWrap: "balance",
-                  color: "#F5F2EA",
-                }}
-              >
-              Enough browsing.
-              </h2>
-              <p
-                style={{
-                  ...bodyLg,
-                  margin: "calc(60px * var(--pace)) 0 0",
-                  maxWidth: "48ch",
-                  color: "rgba(255,255,255,0.8)",
-                }}
-              >
-                You tell us what&apos;s happening.<br></br>
-                We&apos;ll ask the questions.<br></br>
-                And we&apos;ll tell you what we think.<br></br>
-                If we&apos;re not a good fit, we&apos;ll say so.
-              </p>
-              <Link
-                href="/lets-talk"
-                className="cta-link"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "baseline",
-                  gap: "0.8em",
-                  marginTop: "calc(60px * var(--pace))",
-                  paddingBottom: 14,
-                  borderBottom: "1px solid rgba(255,255,255,0.3)",
-                  fontFamily: "'Archivo Narrow',sans-serif",
-                  fontWeight: 500,
-                  fontSize: "clamp(1.15rem,1.5vw,1.4rem)",
-                  letterSpacing: "0.02em",
-                  color: "#F5F2EA",
-                }}
-              >
-                <span>Let's Talk</span>
-                <span
-                  style={{
-                    fontFamily: "'Archivo Narrow',sans-serif",
-                    fontSize: "0.55em",
-                    display: "inline-block",
-                  }}
+
+            <WorkflowVisual />
+          </div>
+        </div>
+      </section>
+
+      {/* 03 — Capabilities */}
+      <section className={s.section} id="capabilities" aria-labelledby="capabilities-title">
+        <div className={s.wrap}>
+          <p className={s.eyebrow}>Capabilities</p>
+          <h2 className={s.h2} id="capabilities-title">What we deliver.</h2>
+          <p className={s.lede}>
+            Custom software, systems integration, automation, and operational intelligence — in service
+            of one connected operation.
+          </p>
+          <ul className={s.caps}>
+            {capabilities.map((c, i) => (
+              <li className={s.cap} key={c.title}>
+                <p className={s.capNum}>0{i + 1}</p>
+                <h3 className={s.capTitle}>{c.title}</h3>
+                <p className={s.capBody}>{c.body}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* 04 — Selected work */}
+      <section className={`${s.section} ${s.sectionAlt}`} id="work" aria-labelledby="work-title">
+        <div className={s.wrap}>
+          <p className={s.eyebrow}>Selected work</p>
+          <h2 className={s.h2} id="work-title">Working demonstrations, clearly labeled.</h2>
+          <p className={s.lede}>
+            We show what we&apos;ve built. Prototypes are marked as prototypes; client work appears only
+            with permission.
+          </p>
+          <div className={s.work}>
+            {work.map((w) => (
+              <article className={s.workItem} key={w.title} data-flagship={w.flagship}>
+                <div>
+                  <span className={s.workTag} data-kind={w.kind}>{w.tag}</span>
+                  <h3 className={s.workTitle}>{w.title}</h3>
+                </div>
+                <div>
+                  <p className={s.workLabel}>Problem</p>
+                  <p className={s.workBody}>{w.problem}</p>
+                </div>
+                <div>
+                  <p className={s.workLabel}>Solution</p>
+                  <p className={s.workBody}>{w.solution}</p>
+                </div>
+                <a
+                  className={s.workLink}
+                  href={w.href}
+                  {...(w.href.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                 >
-                  →
-                </span>
-              </Link>
-            </div>
+                  {w.cta} →
+                </a>
+              </article>
+            ))}
           </div>
         </div>
       </section>
 
-      <SiteFooter introComplete={introComplete} />
+      {/* 05 — Engagements */}
+      <section className={s.section} id="engagements" aria-labelledby="engagements-title">
+        <div className={s.wrap}>
+          <p className={s.eyebrow}>Engagements</p>
+          <h2 className={s.h2} id="engagements-title">A defined path, one step at a time.</h2>
+          <p className={s.lede}>
+            Every engagement begins with an assessment. Each stage earns the next — no six-figure
+            commitment before the problem is understood.
+          </p>
 
-      <GlobalMuteButton introComplete={introComplete} />
+          <div className={s.stairs}>
+            {stairs.map((st, i) => (
+              <div className={s.stair} key={st.stage}>
+                <div className={s.stairNum}>0{i + 1}</div>
+                <div>
+                  <h3 className={s.stairStage}>{st.stage}</h3>
+                  <p className={s.stairName}>{st.name}</p>
+                </div>
+                <p className={s.stairBody}>{st.body}</p>
+                <div className={s.stairPrice}>
+                  {st.price}
+                  <small>{st.unit}</small>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className={s.stairsNote}>
+            Indicative ranges, subject to scope. Multi-system work is quoted only after an assessment.
+          </p>
 
-      {!hasEntered && <WelcomeModal onEnter={handleEnter} />}
+          <div className={s.journey} aria-label="Delivery journey">
+            <span>Diagnose</span><span data-arrow>→</span>
+            <span>Demo</span><span data-arrow>→</span>
+            <span>Build</span><span data-arrow>→</span>
+            <span>Care</span>
+          </div>
+
+          <div className={s.btnRow}>
+            <a href="#assessment" className={s.btn}>Start with an assessment</a>
+          </div>
+        </div>
+      </section>
+
+      {/* 06 — Assessment */}
+      <section className={`${s.section} ${s.sectionAlt}`} id="assessment" aria-labelledby="assessment-title">
+        <div className={s.wrap}>
+          <div className={s.twoCol}>
+            <div>
+              <p className={s.eyebrow}>Request an assessment</p>
+              <h2 className={s.h2} id="assessment-title">
+                Show us the workflow that&apos;s slowing your business down.
+              </h2>
+              <p className={s.lede}>
+                Tell us what&apos;s breaking. We&apos;ll tell you whether it&apos;s worth fixing — and what
+                fixing it would take.
+              </p>
+              <div style={{ marginTop: 40 }}>
+                <p className={s.eyebrow}>We work best when</p>
+                <ul className={s.principles}>
+                  <li>The decision-maker is in the conversation.</li>
+                  <li>We can see how the business actually operates.</li>
+                  <li>Evidence matters more than defending past decisions.</li>
+                </ul>
+              </div>
+            </div>
+            <AssessmentForm />
+          </div>
+        </div>
+      </section>
+
+      <footer className={s.footer}>
+        <div className={s.wrap}>
+          <div className={s.footerRow}>
+            <div>Binary 1702 · Sacramento, CA</div>
+            <nav className={s.footerLinks} aria-label="Footer">
+              <Link href="/showcase">Philosophy</Link>
+              <Link href="/experiments">Labs</Link>
+              <a href="https://portal.binary1702.com">Client login</a>
+            </nav>
+            <div className={s.footerTag}>Complex decisions deserve clear thinking.</div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

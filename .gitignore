@@ -8,3 +8,5 @@ next-env.d.ts
 .env*.local
 .vercel
 .vscode
+b1702-src.tgz
+_to_delete/
