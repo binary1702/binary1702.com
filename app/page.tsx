@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import s from "./home.module.css";
-import HomeNav from "@/components/home/HomeNav";
 import WorkflowVisual from "@/components/home/WorkflowVisual";
 import AssessmentForm from "@/components/home/AssessmentForm";
 import AsciiField from "@/components/home/AsciiField";
 import CanopyOpening from "@/components/home/CanopyOpening";
+import Slide from "@/components/home/Slide";
 
 /* ------------------------------------------------------------------
    Binary 1702 — enterprise homepage.
@@ -116,57 +116,17 @@ export default function HomePage() {
     <div className={s.page}>
       <CanopyOpening />
       <div className={s.opening} aria-hidden="true" />
-      <HomeNav />
       <AsciiField />
 
-      {/* 01 — Hero */}
-      <section className={s.hero} id="problem" aria-labelledby="hero-title">
-        <div className={s.heroGlow} aria-hidden="true" />
-        <div className={s.wrap}>
-          <div className={s.heroGrid}>
-            <div>
-              <p className={s.eyebrow}>Enterprise Technology Transformation</p>
-              <h1 className={s.h1} id="hero-title">
-                Your business has systems. <em>Do they work together?</em>
-              </h1>
-              <p className={s.lede}>
-                Sales, warehouse, field teams, and finance each run on their own tools. Work moves
-                between them through email, spreadsheets, and memory — and that&apos;s where delays,
-                errors, and blind spots live.
-              </p>
-              <p className={s.heroStatement}>
-                We transform fragmented operations into connected digital systems.
-              </p>
-              <div className={s.btnRow}>
-                <a href="#assessment" className={s.btn}>
-                  Request an Enterprise Workflow Assessment
-                </a>
-                <a href="#transformation" className={`${s.btn} ${s.btnGhost}`}>
-                  See the transformation ↓
-                </a>
-              </div>
-            </div>
-
-            <div aria-hidden="true">
-              <div className={s.nodes}>
-                {[
-                  ["Sales", "Quotes in a CRM. Approvals in email."],
-                  ["Warehouse", "Inventory in one system. Handovers on paper."],
-                  ["Field", "Completion evidence on a technician's phone."],
-                  ["Finance", "Invoices wait for someone to confirm the job."],
-                ].map(([label, sub]) => (
-                  <div className={s.node} key={label}>
-                    <span className={s.nodeDot} />
-                    <p className={s.nodeLabel}>{label}</p>
-                    <p className={s.nodeSub}>{sub}</p>
-                  </div>
-                ))}
-              </div>
-              <p className={s.nodesCaption}>Four systems. No shared record of the work between them.</p>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* 01 — The problem */}
+      <Slide
+        id="problem"
+        index="01"
+        label="The problem"
+        src="/terrain.jpg"
+        line={<>Your business has systems. Do they work together?</>}
+        sub={<>Sales · Warehouse · Field · Finance — each on its own tools. The work between them moves by email, spreadsheet, and memory.</>}
+      />
 
       {/* 02 — Transformation */}
       <section className={`${s.section} ${s.sectionAlt}`} id="transformation" aria-labelledby="transformation-title">

@@ -34,9 +34,13 @@ type Props = {
   className?: string;
   /** when false the loop sleeps (nothing drawn, no rAF) — e.g. once the opening has scrolled away */
   active?: boolean;
+  /** travel through the color cycle (the canopy) or keep the photo's own tones (monochrome references) */
+  cycle?: boolean;
+  /** cell size in px at desktop widths */
+  cell?: number;
 };
 
-export default function CanopyField({ src = "/canopy.jpg", className, active = true }: Props) {
+export default function CanopyField({ src = "/canopy.jpg", className, active = true, cycle = true, cell }: Props) {
   const ref = useRef<HTMLCanvasElement>(null);
   const activeRef = useRef(active);
   activeRef.current = active;
@@ -69,7 +73,7 @@ export default function CanopyField({ src = "/canopy.jpg", className, active = t
       dpr = Math.min(window.devicePixelRatio || 1, W > 1600 ? 1.5 : 2);
       canvas.width = W * dpr; canvas.height = H * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      cw = W < 700 ? 8 : W > 1800 ? 10 : 9; ch = cw * 1.5;
+      cw = cell ?? (W < 700 ? 8 : W > 1800 ? 10 : 9); ch = cw * 1.5;
       cols = Math.ceil(W / cw); rows = Math.ceil(H / ch);
       sw = cols; sh = rows;
 
@@ -136,7 +140,7 @@ export default function CanopyField({ src = "/canopy.jpg", className, active = t
       if (now - lastDraw < FRAME_MS) return;                 // 30 fps is plenty for a swaying forest
       lastDraw = now;
 
-      const t = (now - t0) / 1000;
+      const t = Math.max(0, (now - t0) / 1000); // rAF timestamps can precede a performance.now() taken just before
       const fade = Math.min(1, t / 3.4);
       ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
       mouse.vx = mouse.x - mouse.px; mouse.vy = mouse.y - mouse.py; mouse.px = mouse.x; mouse.py = mouse.y;
@@ -162,7 +166,9 @@ export default function CanopyField({ src = "/canopy.jpg", className, active = t
         const ix = sx < 0 ? 0 : sx >= sw ? sw - 1 : sx | 0, iy = sy < 0 ? 0 : sy >= sh ? sh - 1 : sy | 0;
         const i = iy * sw + ix;
         const v = colV[i];
-        const rr = colR[i] * 0.3 + v * tr * 0.7, gg = colG[i] * 0.3 + v * tg * 0.7, bb = colB[i] * 0.3 + v * tb * 0.7;
+        const rr = cycle ? colR[i] * 0.3 + v * tr * 0.7 : colR[i];
+        const gg = cycle ? colG[i] * 0.3 + v * tg * 0.7 : colG[i];
+        const bb = cycle ? colB[i] * 0.3 + v * tb * 0.7 : colB[i];
         ctx.drawImage(
           sprite(chars[i], Math.round((rr > 1 ? 1 : rr) * (Q - 1)), Math.round((gg > 1 ? 1 : gg) * (Q - 1)), Math.round((bb > 1 ? 1 : bb) * (Q - 1))),
           px + ox, py + oy, cw, ch,
@@ -198,7 +204,7 @@ export default function CanopyField({ src = "/canopy.jpg", className, active = t
       window.removeEventListener("pointermove", onMove);
       canvas.removeEventListener("pointerleave", onLeave);
     };
-  }, [src]);
+  }, [src, cycle, cell]);
 
   // wake the loop when the opening becomes visible again
   useEffect(() => { if (active) wake.current(); }, [active]);
