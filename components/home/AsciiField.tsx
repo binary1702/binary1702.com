@@ -62,7 +62,7 @@ export default function AsciiField() {
       for (const p of pts) {
         if (!reduce) {
           // always moving: a slow upward current that wraps, plus a local wander on each glyph's own phase
-          p.gy -= dt * 9 * (0.7 + p.s * 30);
+          p.gy -= dt * 24 * (0.7 + p.s * 30);
           if (p.gy < -cell) { p.gy += h + cell * 2; p.gx = Math.random() * w; }
           const wx = Math.sin(t * 0.0011 * (0.6 + p.s * 40) + p.gx * 0.011) * 10;
           const wy = Math.cos(t * 0.0009 * (0.6 + p.s * 40) + p.gy * 0.013) * 6;
