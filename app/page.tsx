@@ -118,14 +118,22 @@ export default function HomePage() {
       <div className={s.opening} aria-hidden="true" />
       <AsciiField />
 
-      {/* 01 — The problem */}
+      {/* 01 — Principles */}
       <Slide
-        id="problem"
+        id="principles"
         index="01"
-        label="The problem"
+        label="Principles"
         src="/terrain.jpg"
-        line={<>Your business has systems. Do they work together?</>}
-        sub={<>Sales · Warehouse · Field · Finance — each on its own tools. The work between them moves by email, spreadsheet, and memory.</>}
+        line={<>An enterprise is a system of systems.</>}
+        sub={
+          <>
+            People. Processes. Information. Decisions.
+            <br />
+            Technology connects them, but connection alone does not create coherence.
+            <br />
+            Transformation begins with understanding the whole.
+          </>
+        }
       />
 
       {/* 02 — Transformation */}
