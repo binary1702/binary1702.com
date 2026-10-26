@@ -114,10 +114,12 @@ const stairs = [
 export default function HomePage() {
   return (
     <div className={s.page}>
+      <CanopyOpening />
+      <div className={s.opening} aria-hidden="true" />
       <HomeNav />
+      <AsciiField />
 
       {/* 01 — Hero */}
-      <AsciiField />
       <section className={s.hero} id="problem" aria-labelledby="hero-title">
         <div className={s.heroGlow} aria-hidden="true" />
         <div className={s.wrap}>
