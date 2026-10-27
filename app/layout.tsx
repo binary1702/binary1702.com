@@ -4,7 +4,7 @@ import { AudioProvider } from "@/components/AudioProvider";
 import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
-  title: "Binary1702",
+  title: "Binary 1702",
   description:
     "Binary1702 is a studio for business owners who know something is wrong but not yet what it is. We start by finding out.",
 };
