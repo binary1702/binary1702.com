@@ -16,7 +16,7 @@ import { featuredProjects } from "@/lib/projects";
    ------------------------------------------------------------------ */
 
 export const metadata: Metadata = {
-  title: "Binary 1702 — Enterprise Technology Transformation",
+  title: "Binary 1702",
   description:
     "Binary 1702 transforms fragmented enterprise operations into connected digital systems. Workflow transformation, systems integration, and operational intelligence for operations-intensive organizations.",
 };
