@@ -34,7 +34,7 @@ export default function PointCanvas({ system, paused }: { system: PointCloudSyst
     const CW = 2, CH = 2 * 1.55;
 
     const fit = () => {
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      dpr = Math.min(window.devicePixelRatio || 1, 3); // phones are 3×; capping at 2 made the cloud upscale and blur
       W = canvas.clientWidth; H = canvas.clientHeight;
       canvas.width = W * dpr; canvas.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       system.resize(Math.max(1, Math.floor(W / CW)), Math.max(1, Math.floor(H / CH)));
@@ -53,7 +53,7 @@ export default function PointCanvas({ system, paused }: { system: PointCloudSyst
         const lit = focus < 0 || reg === focus;
         const c = REGION_COLORS[reg];
         const a = (lit ? 0.28 + 0.5 * near : 0.06 + 0.06 * near) * fade;
-        const r = lit ? 0.8 + 1.1 * near : 0.6 + 0.4 * near;
+        const r = (lit ? 0.8 + 1.1 * near : 0.6 + 0.4 * near) * (H < 600 ? 1.35 : 1); // small stages: slightly bigger dots so the cloud keeps its weight
         ctx.fillStyle = `rgba(${c[0]},${c[1]},${c[2]},${a.toFixed(3)})`;
         ctx.beginPath(); ctx.arc(x, y, r, 0, 6.2832); ctx.fill();
       }

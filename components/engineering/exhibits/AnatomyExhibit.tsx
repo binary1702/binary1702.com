@@ -15,6 +15,8 @@ import { PointCloudSystem, type CloudData } from "@/lib/generative";
 
 const fmt = (n: number) => n.toLocaleString("en-US");
 
+const HIDDEN = new Set(["Head & neck", "Spinal cord"]);
+
 export default function AnatomyExhibit() {
   const [data, setData] = useState<CloudData | null>(null);
   const [focus, setFocus] = useState(-1);
@@ -50,7 +52,7 @@ export default function AnatomyExhibit() {
         <style>{`
           .an-parts { position: absolute; left: 0; right: 0; top: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 2px 18px; z-index: 2; }
           .an-stage { position: absolute !important; left: 0 !important; right: 0 !important; top: 34px !important; bottom: 0 !important; width: 100% !important; }
-          @media (max-width: 860px) { .an-parts { gap: 2px 12px; } .an-stage { top: 56px !important; } }
+          @media (max-width: 860px) { .an-parts { gap: 2px 12px; } .an-stage { top: 48px !important; } }
         `}</style>
         {system ? (
           <div className="an-stage" style={{ background: "radial-gradient(ellipse 26% 62% at 50% 50%, rgba(0,0,0,.97) 0%, rgba(0,0,0,.92) 60%, rgba(0,0,0,.5) 85%, rgba(0,0,0,0) 100%)" }}><PointCanvas system={system} paused={false} /></div>
@@ -63,15 +65,15 @@ export default function AnatomyExhibit() {
         {/* part controls, set into the frame */}
         {data && (
           <div role="group" aria-label="Regions of the body" className="an-parts">
-            {[-1, ...data.regions.map((_, i) => i)].map((p) => {
+            {data.regions.map((_, i) => i).filter((i) => !HIDDEN.has(data.regions[i])).map((p) => {
               const on = focus === p;
-              const label = p < 0 ? "All" : data.regions[p];
+              const label = data.regions[p];
               return (
                 <button
                   key={p}
                   type="button"
                   aria-pressed={on}
-                  onClick={() => setFocus(p)}
+                  onClick={() => setFocus(on ? -1 : p)} /* tap again to release */
                   style={{
                     background: "none", border: 0, padding: "3px 0", textAlign: "left", cursor: "pointer",
                     fontFamily: "ui-monospace, 'SF Mono', Menlo, monospace", fontSize: 10, letterSpacing: ".24em", textTransform: "uppercase",
