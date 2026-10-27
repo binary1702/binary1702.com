@@ -10,3 +10,4 @@ next-env.d.ts
 .vscode
 b1702-src.tgz
 _to_delete/
+*.tgz
