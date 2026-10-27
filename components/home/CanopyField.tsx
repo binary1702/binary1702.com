@@ -38,9 +38,13 @@ type Props = {
   cycle?: boolean;
   /** cell size in px at desktop widths */
   cell?: number;
+  /** a fixed tint (0..1 rgb) the photo's light is rendered in; overrides cycle */
+  tint?: [number, number, number];
+  /** colour saturation multiplier applied to the photo (default 1.7 — the canopy likes it; a sunrise does not) */
+  saturation?: number;
 };
 
-export default function CanopyField({ src = "/canopy.jpg", className, active = true, cycle = true, cell }: Props) {
+export default function CanopyField({ src = "/canopy.jpg", className, active = true, cycle = true, cell, tint, saturation = 1.7 }: Props) {
   const ref = useRef<HTMLCanvasElement>(null);
   const activeRef = useRef(active);
   activeRef.current = active;
@@ -60,7 +64,7 @@ export default function CanopyField({ src = "/canopy.jpg", className, active = t
     let lum = new Float32Array(0), gx = new Float32Array(0), gy = new Float32Array(0);
     // precomputed per source cell: which glyph, and the photo's own (normalised) color
     let chars: string[] = [];
-    let colR = new Float32Array(0), colG = new Float32Array(0), colB = new Float32Array(0), colV = new Float32Array(0);
+    let colR = new Float32Array(0), colG = new Float32Array(0), colB = new Float32Array(0), colV = new Float32Array(0), colL = new Float32Array(0);
     let cells: { p: number; dx: number; dy: number }[] = [];
     const sprites = new Map<string, HTMLCanvasElement>();
     const mouse = { x: -1e4, y: -1e4, vx: 0, vy: 0, px: -1e4, py: -1e4 };
@@ -95,7 +99,7 @@ export default function CanopyField({ src = "/canopy.jpg", className, active = t
       }
       // glyph + base color per source cell, once — the per-frame loop only looks these up
       const n = sw * sh;
-      chars = new Array(n); colR = new Float32Array(n); colG = new Float32Array(n); colB = new Float32Array(n); colV = new Float32Array(n);
+      chars = new Array(n); colR = new Float32Array(n); colG = new Float32Array(n); colB = new Float32Array(n); colV = new Float32Array(n); colL = new Float32Array(n);
       for (let i = 0; i < n; i++) {
         const L = lum[i];
         const g = Math.hypot(gx[i], gy[i]);
@@ -109,10 +113,10 @@ export default function CanopyField({ src = "/canopy.jpg", className, active = t
         }
         let rr = pix[i * 4] / 255, gg = pix[i * 4 + 1] / 255, bb = pix[i * 4 + 2] / 255;
         const m = (rr + gg + bb) / 3;
-        rr = Math.max(0, m + (rr - m) * 1.7); gg = Math.max(0, m + (gg - m) * 1.7); bb = Math.max(0, m + (bb - m) * 1.7);
+        rr = Math.max(0, m + (rr - m) * saturation); gg = Math.max(0, m + (gg - m) * saturation); bb = Math.max(0, m + (bb - m) * saturation);
         const v = 0.3 + 0.7 * Math.pow(L, 0.7);
         const mx = Math.max(rr, gg, bb, 0.001);
-        colR[i] = rr / mx * v; colG[i] = gg / mx * v; colB[i] = bb / mx * v; colV[i] = v;
+        colR[i] = rr / mx * v; colG[i] = gg / mx * v; colB[i] = bb / mx * v; colV[i] = v; colL[i] = L;
       }
       cells = Array.from({ length: cols * rows }, () => ({ p: Math.random() * 6.283, dx: 0, dy: 0 }));
       sprites.clear();
@@ -166,9 +170,10 @@ export default function CanopyField({ src = "/canopy.jpg", className, active = t
         const ix = sx < 0 ? 0 : sx >= sw ? sw - 1 : sx | 0, iy = sy < 0 ? 0 : sy >= sh ? sh - 1 : sy | 0;
         const i = iy * sw + ix;
         const v = colV[i];
-        const rr = cycle ? colR[i] * 0.3 + v * tr * 0.7 : colR[i];
-        const gg = cycle ? colG[i] * 0.3 + v * tg * 0.7 : colG[i];
-        const bb = cycle ? colB[i] * 0.3 + v * tb * 0.7 : colB[i];
+        const vt = tint ? Math.min(1, 0.06 + Math.pow(colL[i], 0.85) * 1.3) : v; // tinted fields: luminance only, steep curve — arcs glow, floor stays dark
+        const rr = tint ? vt * tint[0] : cycle ? colR[i] * 0.3 + v * tr * 0.7 : colR[i];
+        const gg = tint ? vt * tint[1] : cycle ? colG[i] * 0.3 + v * tg * 0.7 : colG[i];
+        const bb = tint ? vt * tint[2] : cycle ? colB[i] * 0.3 + v * tb * 0.7 : colB[i];
         ctx.drawImage(
           sprite(chars[i], Math.round((rr > 1 ? 1 : rr) * (Q - 1)), Math.round((gg > 1 ? 1 : gg) * (Q - 1)), Math.round((bb > 1 ? 1 : bb) * (Q - 1))),
           px + ox, py + oy, cw, ch,
@@ -204,7 +209,7 @@ export default function CanopyField({ src = "/canopy.jpg", className, active = t
       window.removeEventListener("pointermove", onMove);
       canvas.removeEventListener("pointerleave", onLeave);
     };
-  }, [src, cycle, cell]);
+  }, [src, cycle, cell, tint?.[0], tint?.[1], tint?.[2], saturation]);
 
   // wake the loop when the opening becomes visible again
   useEffect(() => { if (active) wake.current(); }, [active]);

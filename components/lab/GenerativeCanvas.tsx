@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { AsciiRenderer, type GenerativeSystem, type Pointer } from "@/lib/generative";
+import { AsciiRenderer, PALETTE, type GenerativeSystem, type Pointer } from "@/lib/generative";
 
 /* ------------------------------------------------------------------
    GenerativeCanvas — the interaction layer.
@@ -16,9 +16,13 @@ type Props = {
   system: GenerativeSystem;
   paused: boolean;
   className?: string;
+  /** character cell size in px (default: 8 on phones, 10 otherwise) */
+  cell?: number;
+  /** draw over whatever is beneath instead of on ink black */
+  transparent?: boolean;
 };
 
-export default function GenerativeCanvas({ system, paused, className }: Props) {
+export default function GenerativeCanvas({ system, paused, className, cell, transparent }: Props) {
   const ref = useRef<HTMLCanvasElement>(null);
   const pausedRef = useRef(paused);
   pausedRef.current = paused;
@@ -26,11 +30,11 @@ export default function GenerativeCanvas({ system, paused, className }: Props) {
   useEffect(() => {
     const canvas = ref.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d", { alpha: false });
+    const ctx = canvas.getContext("2d", { alpha: !!transparent });
     if (!ctx) return;
 
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const renderer = new AsciiRenderer(ctx, undefined, undefined, window.innerWidth < 700 ? 8 : 10);
+    const renderer = new AsciiRenderer(ctx, transparent ? { ...PALETTE, background: "transparent" } : undefined, undefined, cell ?? (window.innerWidth < 700 ? 8 : 10));
     const pointer: Pointer = { x: NaN, y: NaN, vx: 0, vy: 0, down: false };
     let raf = 0;
     let last = performance.now();
@@ -92,7 +96,7 @@ export default function GenerativeCanvas({ system, paused, className }: Props) {
       window.removeEventListener("pointerup", onUp);
       canvas.removeEventListener("pointerleave", onLeave);
     };
-  }, [system]);
+  }, [system, cell, transparent]);
 
   return <canvas ref={ref} className={className} aria-hidden="true" style={{ display: "block", width: "100%", height: "100%", touchAction: "none" }} />;
 }

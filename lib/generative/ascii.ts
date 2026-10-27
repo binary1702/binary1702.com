@@ -95,8 +95,8 @@ export class AsciiRenderer {
   draw(density: Float32Array, tint: Float32Array, alpha = 1) {
     const { ctx, cols, rows, cw, ch } = this;
     const ox = this.offsetX, oy = this.offsetY;
-    ctx.fillStyle = this.palette.background;
-    ctx.fillRect(0, 0, ctx.canvas.clientWidth, ctx.canvas.clientHeight);
+    if (this.palette.background === "transparent") ctx.clearRect(0, 0, ctx.canvas.clientWidth, ctx.canvas.clientHeight);
+    else { ctx.fillStyle = this.palette.background; ctx.fillRect(0, 0, ctx.canvas.clientWidth, ctx.canvas.clientHeight); }
     ctx.globalAlpha = alpha;
     const n = this.ramp.length - 1;
     for (let r = 0; r < rows; r++) {

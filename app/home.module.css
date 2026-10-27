@@ -13,4 +13,3 @@
 
 /* Chapters lock into place on scroll (snap type lives on html in globals.css). */
 .opening, .page section { scroll-snap-align: start; scroll-snap-stop: always; }
-.page footer { scroll-snap-align: end; }

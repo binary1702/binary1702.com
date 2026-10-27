@@ -1,0 +1,77 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import CanopyField from "./CanopyField";
+
+/* ------------------------------------------------------------------
+   03 — An invitation. The closing chapter: the headline, one
+   paragraph, the terms of a first conversation, the button, and the
+   ways to reach Binary 1702. On the right, a constellation of ideas
+   converging on one bright point. Set BOOKING_URL to a scheduling
+   link when one exists; until then the button opens email.
+   ------------------------------------------------------------------ */
+
+export const BOOKING_URL = "https://calendly.com/benbasuni";
+
+const mono = "ui-monospace, 'SF Mono', Menlo, monospace";
+const serif = "'Playfair Display', Georgia, serif";
+const line = "1px solid rgba(242,239,231,.16)";
+const gold = "#D4A574";
+
+export default function Invitation() {
+  const ref = useRef<HTMLElement>(null);
+  const [live, setLive] = useState(false);
+  useEffect(() => {
+    const el = ref.current; if (!el) return;
+    const io = new IntersectionObserver(([e]) => setLive(e.isIntersecting), { rootMargin: "15% 0px" });
+    io.observe(el); return () => io.disconnect();
+  }, []);
+
+  return (
+    <section ref={ref} id="contact" aria-label="An invitation" style={{ position: "relative", minHeight: "100dvh", background: "#000", color: "#F2EFE7", overflow: "hidden", zIndex: 1, display: "grid", gridTemplateRows: "minmax(0, 1fr) auto" }}>
+      {/* the backdrop: sunrise over the planet, rendered as ASCII through the same engine as the opening, in the photo's own colours */}
+      <div aria-hidden="true" style={{ position: "absolute", inset: 0 }}><CanopyField src="/horizon.jpg" active={live} cycle={false} cell={7} saturation={1.05} /></div>
+      {/* a soft pool behind the text only, so it stays legible without hiding the field */}
+      <div aria-hidden="true" style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: "44%", background: "radial-gradient(ellipse 72% 50% at 28% 52%, rgba(0,0,0,.78) 0%, rgba(0,0,0,.45) 55%, rgba(0,0,0,0) 100%)", pointerEvents: "none" }} />
+      <style>{`
+        .inv-grid { position: relative; display: grid; grid-template-columns: minmax(280px, .9fr) minmax(0, 1.4fr); gap: clamp(24px, 4vw, 64px); align-items: center; padding: clamp(84px, 11vh, 120px) clamp(24px, 6vw, 96px) clamp(28px, 4vh, 48px); min-height: 0; }
+        .inv-btn:hover { background: #F2EFE7 !important; }
+        .inv-foot { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 18px clamp(24px, 6vw, 96px); border-top: 1px solid rgba(242,239,231,.12); font-family: ${mono}; font-size: 10px; letter-spacing: .28em; text-transform: uppercase; color: rgba(242,239,231,.38); }
+        .inv-mark { width: 30px; height: 30px; border-radius: 50%; border: 1px solid rgba(242,239,231,.35); display: grid; place-content: center; font-family: ${mono}; font-size: 12px; color: #F2EFE7; }
+        @media (max-width: 900px) { .inv-grid { grid-template-columns: 1fr; } .inv-foot { justify-content: flex-end; } }
+        @media (max-width: 560px) { .inv-dl { grid-template-columns: 1fr !important; } }
+      `}</style>
+
+      <div className="inv-grid">
+        <div style={{ display: "grid", gap: 26, alignContent: "center" }}>
+          <p style={{ margin: 0, fontFamily: mono, fontSize: 11, letterSpacing: ".4em", textTransform: "uppercase", color: "rgba(242,239,231,.55)" }}>
+            03 <span style={{ margin: "0 10px", color: "rgba(242,239,231,.3)" }}>/</span> An invitation
+          </p>
+          <a href={BOOKING_URL} target="_blank" rel="noopener noreferrer" className="inv-btn" style={{ justifySelf: "start", display: "inline-flex", alignItems: "center", gap: 14, background: gold, color: "#0A0A0A", padding: "18px 28px", fontFamily: mono, fontSize: 13, fontWeight: 600, letterSpacing: ".2em", textTransform: "uppercase", transition: "background 150ms linear" }}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="12" rx="1" /><path d="M1.5 6.5h13M5 1v3M11 1v3" /></svg>
+            Book a conversation →
+          </a>
+          <dl className="inv-dl" style={{ margin: 0, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, maxWidth: 460, borderTop: line, paddingTop: 22 }}>
+            {[["Email", "ben@binary1702.com", "mailto:ben@binary1702.com", false], ["WhatsApp", "+1 916 595 7155", "https://wa.me/19165957155", true], ["Based in", "Sacramento, California", null, false]].map(([k, v, href, wa]) => (
+              <div key={k as string} style={{ borderBottom: line, paddingBottom: 10 }}>
+                <dt style={{ fontFamily: mono, fontSize: 9.5, letterSpacing: ".3em", textTransform: "uppercase", color: "rgba(242,239,231,.45)" }}>{k}</dt>
+                <dd style={{ margin: "6px 0 0", fontFamily: mono, fontSize: 12.5, letterSpacing: ".04em", color: "#F2EFE7", display: "flex", alignItems: "center", gap: 8 }}>
+                  {wa && (
+                    <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" fill="#25D366"><path d="M17.5 14.4c-.3-.1-1.8-.9-2-1-.3-.1-.5-.1-.7.1-.2.3-.8 1-.9 1.2-.2.2-.3.2-.6.1-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6l.5-.5c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5-.1-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.1.2 2.1 3.2 5.1 4.5.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.8-.7 2-1.4.2-.7.2-1.3.2-1.4-.1-.2-.3-.3-.6-.4zM12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2z"/></svg>
+                  )}
+                  {href ? <a href={href as string} target={wa ? "_blank" : undefined} rel={wa ? "noopener noreferrer" : undefined} style={{ color: "inherit" }}>{v}</a> : v}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+
+      </div>
+
+      <div className="inv-foot" style={{ position: "relative" }}>
+        <span />
+        <span>Binary 1702 <span style={{ margin: "0 10px", color: "rgba(242,239,231,.25)" }}>/</span> Sacramento <span style={{ margin: "0 10px", color: "rgba(242,239,231,.25)" }}>·</span> Manila</span>
+      </div>
+    </section>
+  );
+}

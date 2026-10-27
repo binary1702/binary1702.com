@@ -4,3 +4,4 @@ export { LorenzSystem } from "./lorenz";
 export { CanopySystem } from "./canopy";
 export { ReactionSystem } from "./reaction";
 export { OrganismSystem } from "./organism";
+export { PointCloudSystem, type CloudData } from "./pointcloud";

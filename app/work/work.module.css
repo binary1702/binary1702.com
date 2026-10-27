@@ -1,0 +1,35 @@
+/* /work — the engineering archive. Editorial, mono instrument text, serif titles, hairlines. */
+.page {
+  --ivory: #F2EFE7; --ivory-2: rgba(242,239,231,.62); --ivory-3: rgba(242,239,231,.36); --line: rgba(242,239,231,.14); --accent: #C98A3C;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --serif: 'Playfair Display', Georgia, serif;
+  --sans: 'Archivo Narrow', system-ui, sans-serif;
+  min-height: 100dvh; background: #000; color: var(--ivory);
+  padding: clamp(110px, 16vh, 160px) clamp(24px, 6vw, 96px) 80px;
+}
+.page * { box-sizing: border-box; }
+.eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: .4em; text-transform: uppercase; color: var(--ivory-3); margin: 0 0 14px; }
+.h1 { margin: 0 0 14px; font-family: var(--serif); font-weight: 400; font-size: clamp(2rem, 4.6vw, 4rem); line-height: 1.04; letter-spacing: -.015em; max-width: 16ch; text-wrap: balance; }
+.lede { margin: 0 0 56px; font-family: var(--sans); font-size: 16px; line-height: 1.55; color: var(--ivory-2); max-width: 58ch; }
+
+.group { margin-top: 44px; }
+.groupHead { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--accent); font-family: var(--mono); font-size: 11px; letter-spacing: .3em; text-transform: uppercase; color: var(--ivory-2); }
+.groupHead span { color: var(--ivory-3); }
+.row { display: grid; grid-template-columns: 56px minmax(0, 1fr) minmax(0, 1.4fr) auto; gap: clamp(14px, 3vw, 40px); align-items: baseline; padding: 22px 0; border-bottom: 1px solid var(--line); color: inherit; }
+.row:hover .title { color: var(--accent); }
+.id { font-family: var(--mono); font-size: 11px; letter-spacing: .2em; color: var(--accent); }
+.title { margin: 0; font-family: var(--serif); font-weight: 400; font-size: clamp(1.2rem, 2vw, 1.6rem); letter-spacing: -.01em; transition: color 150ms linear; }
+.desc { margin: 0; font-family: var(--sans); font-size: 14.5px; line-height: 1.5; color: var(--ivory-2); }
+.arrow { font-family: var(--mono); font-size: 11px; letter-spacing: .2em; color: var(--ivory-3); white-space: nowrap; }
+.empty { padding: 18px 0; font-family: var(--mono); font-size: 11px; letter-spacing: .18em; color: var(--ivory-3); border-bottom: 1px solid var(--line); }
+@media (max-width: 760px) { .row { grid-template-columns: 40px 1fr; } .row > :nth-child(3), .row > :nth-child(4) { grid-column: 2; } }
+
+/* detail */
+.meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 22px 32px; margin: 36px 0 44px; padding: 24px 0; border-top: 1px solid var(--accent); border-bottom: 1px solid var(--line); }
+.k { font-family: var(--mono); font-size: 10px; letter-spacing: .28em; text-transform: uppercase; color: var(--ivory-3); margin: 0 0 8px; }
+.v { margin: 0; font-family: var(--mono); font-size: 12.5px; line-height: 1.7; color: var(--ivory); }
+.v a { color: var(--ivory); border-bottom: 1px solid var(--line); }
+.placeholder { color: var(--ivory-3); }
+.exhibit { height: clamp(360px, 52vh, 560px); max-width: 1100px; margin: 0 0 44px; }
+@media (max-width: 860px) { .exhibit { height: auto; } }
+.back { font-family: var(--mono); font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: var(--ivory-2); }
