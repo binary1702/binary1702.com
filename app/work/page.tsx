@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import s from "./work.module.css";
-import SiteMark from "@/components/home/SiteMark";
 import { projects } from "@/lib/projects";
 
 export const metadata: Metadata = {
@@ -13,7 +12,6 @@ export const metadata: Metadata = {
 export default function WorkPage() {
   return (
     <main className={s.page}>
-      <SiteMark />
       <p className={s.eyebrow}>Work</p>
       <h1 className={s.h1}>Selected applications.</h1>
       <p className={s.lede}>Real applications, each linked to where it runs. Status is stated as it is.</p>

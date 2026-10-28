@@ -62,7 +62,7 @@ export default function EngineeringShowcase({ projects, src }: { projects: Proje
             <div className={s.infoBottom}>
               <div className={s.infoMid}>
                 <div>
-                  <p className={s.k}>Engineering applied</p>
+                  <p className={s.k}>Engineering</p>
                   <ul className={s.narrCaps}>
                     {p.instruments.map((c) => <li key={c}>{c}</li>)}
                   </ul>

@@ -9,14 +9,14 @@
   --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --serif: 'Playfair Display', Georgia, serif;
   --sans: 'Archivo Narrow', system-ui, sans-serif;
-  position: relative; min-height: 100dvh; background: #000; color: var(--ivory); overflow: hidden; z-index: 1;
+  position: relative; min-height: 100lvh; background: #000; color: var(--ivory); overflow: hidden; z-index: 1;
 }
 .section * { box-sizing: border-box; }
 .field { position: absolute; inset: 0; opacity: .6; }
 .scrim { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(to right, rgba(0,0,0,.92) 0%, rgba(0,0,0,.6) 34%, rgba(0,0,0,.25) 100%); }
 
 .grid {
-  position: relative; height: 100dvh;
+  position: relative; height: 100svh; /* the content always fits the visible viewport; the section itself is 100lvh so snapping stays stable */
   display: grid; grid-template-columns: minmax(240px, .85fr) minmax(0, 2.15fr); grid-template-rows: auto minmax(0, 1fr); align-items: stretch;
   gap: clamp(28px, 5vw, 80px); padding: clamp(84px, 11vh, 120px) clamp(24px, 6vw, 96px) clamp(28px, 4vh, 44px);
 }
@@ -123,18 +123,18 @@
 
 /* ---- mobile: question → exhibit → engineering → link ---- */
 @media (max-width: 860px) {
-  .grid { height: 100dvh; grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr) auto; gap: 18px; }
+  .grid { height: 100svh; grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr) auto; gap: 18px; }
   /* 1. selector list, centered */
   .index { grid-column: 1; grid-row: 1; order: 1; text-align: center; }
   .eyebrow { margin-bottom: 8px; }
   .h2 { display: none; }
   .selector { justify-content: center; justify-items: center; }
-  .selector button { grid-template-columns: auto auto; gap: 10px; padding: 6px 0; text-align: center; color: rgba(242,239,231,.78); }
-  .selector button span:first-child { color: rgba(242,239,231,.45); }
-  .selector button[aria-selected="true"] { color: var(--ivory); }
+  .selector button { grid-template-columns: auto auto; gap: 10px; padding: 6px 0; text-align: center; color: rgba(242,239,231,.9); text-shadow: 0 1px 6px rgba(0,0,0,.9); }
+  .selector button span:first-child { color: rgba(242,239,231,.85); }
+  .selector button[aria-selected="true"] { color: #fff; }
   .selector button[aria-selected="true"] span:first-child { color: var(--accent); }
   .selector button:focus-visible { outline: 0; }
-  .eyebrow { color: rgba(242,239,231,.38); }
+  .eyebrow { color: rgba(242,239,231,.85); text-shadow: 0 1px 6px rgba(0,0,0,.9); }
   /* no reserved reading strip under the exhibit on phones: the body gets the whole box */
   .stageInner { gap: 0; grid-template-rows: minmax(0, 1fr) auto; }
   .read { min-height: 0; }

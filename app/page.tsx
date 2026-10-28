@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import s from "./home.module.css";
 import CanopyOpening from "@/components/home/CanopyOpening";
 import EngineeringShowcase from "@/components/engineering/EngineeringShowcase";
-import SiteMark from "@/components/home/SiteMark";
 import Invitation from "@/components/home/Invitation";
 import { featuredProjects } from "@/lib/projects";
 
@@ -26,7 +25,6 @@ const mono = "ui-monospace, 'SF Mono', Menlo, monospace";
 export default function HomePage() {
   return (
     <div className={s.page}>
-      <SiteMark />
       <CanopyOpening />
       <div className={s.opening} aria-hidden="true" />
 

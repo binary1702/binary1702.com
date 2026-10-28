@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import s from "../work.module.css";
-import SiteMark from "@/components/home/SiteMark";
 import { projects, projectBySlug } from "@/lib/projects";
 import ExhibitStage from "@/components/engineering/ExhibitStage";
 import e from "@/components/engineering/engineering.module.css";
@@ -27,7 +26,6 @@ export default async function ProjectPage({ params }: { params: Promise<Params> 
 
   return (
     <main className={s.page}>
-      <SiteMark />
       <p className={s.eyebrow}>{p.id} / {p.category}</p>
       <h1 className={s.h1}>{p.title}</h1>
       <p className={s.lede}>{p.description}</p>

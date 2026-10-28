@@ -28,7 +28,7 @@ export default function Invitation() {
   }, []);
 
   return (
-    <section ref={ref} id="contact" aria-label="An invitation" style={{ position: "relative", minHeight: "100dvh", background: "#000", color: "#F2EFE7", overflow: "hidden", zIndex: 1, display: "grid", gridTemplateRows: "minmax(0, 1fr) auto" }}>
+    <section ref={ref} id="contact" aria-label="An invitation" style={{ position: "relative", minHeight: "100lvh", background: "#000", color: "#F2EFE7", overflow: "hidden", zIndex: 1, display: "grid", gridTemplateRows: "minmax(0, 1fr) auto calc(100lvh - 100svh)" }} className="inv-section">
       {/* the backdrop: sunrise over the planet, rendered as ASCII through the same engine as the opening, in the photo's own colours */}
       <div aria-hidden="true" className="inv-field" style={{ position: "absolute", inset: 0 }}><CanopyField src="/horizon.jpg" active={live} cycle={false} cell={7} saturation={1.05} /></div>
       {/* a soft pool behind the text only, so it stays legible without hiding the field */}
@@ -44,7 +44,8 @@ export default function Invitation() {
           .inv-btn { justify-self: center !important; }
           .inv-dl { justify-self: center; width: 100%; }
           .inv-dl dd { justify-content: center; }
-          .inv-foot { justify-content: center; }
+          .inv-foot { display: none; }
+          .inv-section { grid-template-rows: 100svh calc(100lvh - 100svh) !important; }
           /* the sunrise is behind the text here, so dim the whole field and pool the middle */
           .inv-field { opacity: .5; }
           .inv-pool { width: 100% !important; background: radial-gradient(ellipse 90% 60% at 50% 50%, rgba(0,0,0,.95) 0%, rgba(0,0,0,.75) 55%, rgba(0,0,0,0) 100%) !important; }

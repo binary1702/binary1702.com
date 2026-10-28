@@ -57,6 +57,7 @@ html {
 
 /* Homepage chapters snap into place; the page sets data-snap on <html> while mounted. */
 html[data-snap="y"] { scroll-snap-type: y mandatory; }
+/* chapters are sized with 100lvh (the viewport with the mobile URL bar collapsed) so the bar collapsing never moves a snapped chapter */
 @media (prefers-reduced-motion: reduce) { html[data-snap="y"] { scroll-snap-type: none; } }
 
 /* Intro scroll lock - applied during typewriter sequence */

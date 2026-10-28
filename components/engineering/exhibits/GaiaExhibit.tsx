@@ -65,6 +65,9 @@ export default function GaiaExhibit() {
   const [hover, setHover] = useState<string | null>(null);
   const [con, setCon] = useState<string | null>(null);
   const raf = useRef(0);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const drag = useRef<{ id: number; x: number } | null>(null);
+  const [dragging, setDragging] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -76,7 +79,7 @@ export default function GaiaExhibit() {
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     let last = performance.now();
-    const tick = (now: number) => { const dt = now - last; last = now; setT((v) => v + dt * 120); raf.current = requestAnimationFrame(tick); };
+    const tick = (now: number) => { const dt = now - last; last = now; if (!drag.current) setT((v) => v + dt * 360); raf.current = requestAnimationFrame(tick); };
     raf.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf.current);
   }, []);
@@ -95,9 +98,30 @@ export default function GaiaExhibit() {
   const conName = sky?.constellations.find((c) => c.n === litCon)?.n;
   const when = new Date(t);
 
+  // Drag turns the sky by hand: a sweep across the dome is ~180° of sky, i.e. twelve hours.
+  const MS_PER_DEG = 86164000 / 360; // one sidereal day per full turn
+  const onDown = (e: React.PointerEvent<SVGSVGElement>) => {
+    if (e.button !== 0 && e.pointerType === "mouse") return;
+    drag.current = { id: e.pointerId, x: e.clientX }; setDragging(true);
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const onMove = (e: React.PointerEvent<SVGSVGElement>) => {
+    const d = drag.current; if (!d || d.id !== e.pointerId) return;
+    const svg = e.currentTarget; const unitsPerPx = 800 / svg.clientWidth;
+    const dx = (e.clientX - d.x) * unitsPerPx; d.x = e.clientX;
+    setT((v) => v + dx * 0.3 * MS_PER_DEG); // drag right → sky turns the way it does with time
+  };
+  const onUp = (e: React.PointerEvent<SVGSVGElement>) => {
+    if (drag.current?.id !== e.pointerId) return;
+    drag.current = null; setDragging(false);
+    e.currentTarget.releasePointerCapture(e.pointerId);
+  };
+
   return (
     <div className={s.stageBody}>
-      <svg className={s.svg} viewBox="0 0 800 640" preserveAspectRatio="xMidYMid meet" role="group" aria-label="The night sky over Orangevale, California, now">
+      <svg ref={svgRef} className={s.svg} viewBox="0 0 800 650" preserveAspectRatio="xMidYMid meet" role="group" aria-label="The night sky over Orangevale, California, now. Drag to turn the sky."
+        onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}
+        style={{ touchAction: "pan-y", cursor: dragging ? "grabbing" : "grab", userSelect: "none" }}>
         <defs>
           <radialGradient id="gaia-sky" cx="50%" cy="50%" r="50%">
             <stop offset="0%" stopColor="rgba(60,70,110,.22)" />
@@ -147,16 +171,17 @@ export default function GaiaExhibit() {
 
         {/* reading */}
         <g>
-          <text x={16} y={30} className={s.tiny} style={{ fill: "rgba(242,239,231,.6)", fontSize: 10 }}>ORANGEVALE, CALIFORNIA · {when.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }).toUpperCase()}</text>
+          {/* the observer, under the dome */}
+          <text x={CX} y={CY + R + 26} textAnchor="middle" className={s.tiny} style={{ fill: "rgba(242,239,231,.9)", fontSize: 11, paintOrder: "stroke", stroke: "rgba(0,0,0,.8)", strokeWidth: 3 }}>ORANGEVALE, CALIFORNIA · {when.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }).toUpperCase()}</text>
           {hovered ? (
             <>
-              <text x={16} y={596} className={s.serifT} style={{ fontSize: 24 }}>{hovered[1] || hovered[0].toUpperCase()}</text>
-              <text x={16} y={618} className={s.tiny} style={{ fill: "rgba(242,239,231,.75)", fontSize: 10 }}>
+              <text x={16} y={34} className={s.serifT} style={{ fontSize: 24 }}>{hovered[1] || hovered[0].toUpperCase()}</text>
+              <text x={16} y={56} className={s.tiny} style={{ fill: "rgba(242,239,231,.75)", fontSize: 10 }}>
                 {hovered[5].toUpperCase()} · MAG {hovered[4].toFixed(2)}{hovered[6] ? ` · ${Math.round(hovered[6]).toLocaleString("en-US")} LIGHT-YEARS` : ""}{hovered[7] ? ` · ${hovered[7]}` : ""}
               </text>
             </>
           ) : conName ? (
-            <text x={16} y={596} className={s.serifT} style={{ fontSize: 24 }}>{conName}</text>
+            <text x={16} y={34} className={s.serifT} style={{ fontSize: 24 }}>{conName}</text>
           ) : null}
         </g>
       </svg>

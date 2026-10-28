@@ -9,7 +9,7 @@
 .page *, .page *::before, .page *::after { box-sizing: border-box; }
 
 /* The opening (fixed canopy) covers the first viewport; this spacer holds the page beneath it. */
-.opening { height: 100dvh; }
+.opening { height: 100lvh; }
 
 /* Chapters lock into place on scroll (snap type lives on html in globals.css). */
 .opening, .page section { scroll-snap-align: start; scroll-snap-stop: always; }
