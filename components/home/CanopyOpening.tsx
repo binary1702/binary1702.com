@@ -47,7 +47,7 @@ export default function CanopyOpening() {
   }, []);
 
   return (
-    <div ref={ref} aria-label="Binary 1702 — Enterprise Technology Transformation" style={{ position: "fixed", inset: 0, zIndex: 60, background: "#000", color: "#F2EFE7", overflow: "hidden" }}>
+    <div ref={ref} aria-label="Binary 1702 — Building the Eighth Wonder of the World" style={{ position: "fixed", inset: 0, zIndex: 60, background: "#000", color: "#F2EFE7", overflow: "hidden" }}>
       <CanopyField active={!gone} />
 
       <div
@@ -81,7 +81,7 @@ export default function CanopyOpening() {
             opacity: ready ? 1 : 0, transform: ready ? "none" : "translateY(8px)", transition: "opacity 2.6s ease 1.4s, transform 2.6s ease 1.4s",
           }}
         >
-          Enterprise Technology Transformation
+          Building the Eighth Wonder of the World.
         </h1>
       </div>
 
