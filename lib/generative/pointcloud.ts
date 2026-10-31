@@ -42,6 +42,37 @@ export class PointCloudSystem implements GenerativeSystem {
   /** seconds; the cloud completes a turn in ~48 s */
   spin = 0.13;
 
+  /* ---- direct manipulation: click-and-drag spins the cloud ----
+     While held, the cloud follows the hand exactly. On release it coasts
+     (inertia) and the idle sway resumes around wherever it was left. */
+  private dragging = false;
+  private offYaw = 0; private offPitch = 0;   // where the visitor has turned it, relative to the idle pose
+  private vYaw = 0; private vPitch = 0;       // coasting velocity, radians per frame
+  get isDragging() { return this.dragging; }
+  beginDrag() { this.dragging = true; this.vYaw = 0; this.vPitch = 0; }
+  /** rotate by these angles (radians): yaw about the vertical axis, pitch toward/away */
+  dragBy(dYaw: number, dPitch: number) {
+    this.yaw += dYaw;
+    this.pitch = Math.max(-1.2, Math.min(1.2, this.pitch + dPitch));
+    this.vYaw = dYaw; this.vPitch = dPitch;
+  }
+  endDrag() { this.dragging = false; }
+
+  /* ---- cluster-based hover ----
+     Instead of picking individual structures (too small, scattered), we find all
+     points within a generous radius of the cursor and light them all up together.
+     This gives a "flashlight" effect: hover near a region and everything close glows. */
+  private lostSince = -1;
+  private static readonly CLUSTER_R = 3;  // squared grid distance to include points (~1.7 cells radius)
+  private static readonly LINGER_S = 0.4;   // seconds the highlight survives after cursor leaves
+  private static readonly FADE_IN = 0.25;   // seconds to fade in
+  private static readonly FADE_OUT = 0.35;  // seconds to fade out
+  /** Set of structure indices currently highlighted (all structures with points near cursor) */
+  hoveredSet = new Set<number>();
+  /** 0..1 intensity of the highlight, animated smoothly */
+  hoverIntensity = 0;
+  private targetIntensity = 0;
+
   constructor(public readonly data: CloudData) {
     const n = data.i.length;
     this.px = new Float32Array(n); this.py = new Float32Array(n); this.pz = new Float32Array(n); this.si = new Uint16Array(n); this.ri = new Uint8Array(n);
@@ -61,9 +92,22 @@ export class PointCloudSystem implements GenerativeSystem {
   step(dt: number, t: number, pointer: Pointer) {
     const { cols, rows, density, tint } = this;
     const hasP = !Number.isNaN(pointer.x);
-    this.tyaw = Math.PI + Math.sin(t * this.spin) * 0.55 + (hasP ? (pointer.x / cols - 0.5) * 0.7 : 0); // faces the viewer; sways ±32° rather than turning its back
-    this.tpitch = 0.08 + (hasP ? (pointer.y / rows - 0.5) * 0.35 : 0);
-    this.yaw += (this.tyaw - this.yaw) * 0.05; this.pitch += (this.tpitch - this.pitch) * 0.05;
+    const lean = hasP && !this.dragging;
+    // the cursor no longer leans the figure — it only turns when clicked and dragged
+    const sway = Math.PI + Math.sin(t * this.spin) * 0.55; // faces the viewer; sways ±32° rather than turning its back
+    const tilt = 0.08;
+    if (this.dragging) {
+      // the hand owns the pose; remember it relative to the idle motion
+      this.offYaw = this.yaw - sway; this.offPitch = this.pitch - tilt;
+    } else {
+      const coasting = Math.abs(this.vYaw) + Math.abs(this.vPitch) > 1e-4;
+      this.offYaw += this.vYaw; this.offPitch += this.vPitch;
+      this.vYaw *= 0.93; this.vPitch *= 0.93;
+      this.tyaw = sway + this.offYaw;
+      this.tpitch = Math.max(-1.2, Math.min(1.2, tilt + this.offPitch));
+      if (coasting) { this.yaw = this.tyaw; this.pitch = this.tpitch; }
+      else { this.yaw += (this.tyaw - this.yaw) * 0.05; this.pitch += (this.tpitch - this.pitch) * 0.05; }
+    }
     const cy = Math.cos(this.yaw), sy = Math.sin(this.yaw), cp = Math.cos(this.pitch), sp = Math.sin(this.pitch);
 
     density.fill(0); tint.fill(0);
@@ -71,7 +115,7 @@ export class PointCloudSystem implements GenerativeSystem {
     const cxs = cols / 2, cys = rows / 2;
     const cam = 2.6;
     const n = this.si.length;
-    let best = -1, bestD = 9;
+    const clusterSet = new Set<number>();
 
     for (let k = 0; k < n; k++) {
       const x0 = this.px[k], y0 = this.py[k], z0 = this.pz[k];
@@ -93,15 +137,47 @@ export class PointCloudSystem implements GenerativeSystem {
         density[idx] = Math.min(1, density[idx] + 0.035 + 0.05 * near);
         tint[idx] = Math.max(tint[idx], 0.06);                    // stone
       }
-      if (hasP && lit) { const dx = gx - pointer.x, dy = (gy - pointer.y) * 1.55; const d = dx * dx + dy * dy; if (d < bestD) { bestD = d; best = k; } }
+      // cluster-based hover: collect all structures with points near the cursor
+      if (lean && lit) {
+        const dx = gx - pointer.x, dy = gy - pointer.y;
+        const d = dx * dx + dy * dy;
+        if (d < PointCloudSystem.CLUSTER_R) clusterSet.add(this.si[k]);
+      }
     }
 
-    // the hovered structure, in full
-    this.hovered = best >= 0 ? this.si[best] : -1;
-    if (best >= 0) {
-      const sidx = this.si[best];
+    // resolve the hover with linger
+    if (!lean) {
+      this.hoveredSet.clear();
+      this.hovered = -1;
+      this.lostSince = -1;
+      this.targetIntensity = 0;
+    } else if (clusterSet.size > 0) {
+      this.hoveredSet = clusterSet;
+      this.hovered = clusterSet.values().next().value ?? -1; // pick one for the label
+      this.lostSince = -1;
+      this.targetIntensity = 1;
+    } else {
+      // nothing near cursor — linger briefly then clear
+      if (this.lostSince < 0) this.lostSince = t;
+      if (t - this.lostSince >= PointCloudSystem.LINGER_S) {
+        this.hoveredSet.clear();
+        this.hovered = -1;
+        this.lostSince = -1;
+      }
+      this.targetIntensity = 0;
+    }
+
+    // animate hover intensity smoothly
+    if (this.hoverIntensity < this.targetIntensity) {
+      this.hoverIntensity = Math.min(1, this.hoverIntensity + dt / PointCloudSystem.FADE_IN);
+    } else if (this.hoverIntensity > this.targetIntensity) {
+      this.hoverIntensity = Math.max(0, this.hoverIntensity - dt / PointCloudSystem.FADE_OUT);
+    }
+
+    // highlight all points in the hovered cluster
+    if (this.hoveredSet.size > 0) {
       for (let k = 0; k < n; k++) {
-        if (this.si[k] !== sidx) continue;
+        if (!this.hoveredSet.has(this.si[k])) continue;
         const c = this.sx[k] | 0, r = this.sy[k] | 0;
         if (c < 0 || c >= cols || r < 0 || r >= rows) continue;
         density[r * cols + c] = 1; tint[r * cols + c] = 1;

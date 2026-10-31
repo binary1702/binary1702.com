@@ -43,20 +43,19 @@ export default function EngineeringShowcase({ projects, src }: { projects: Proje
       <div className={s.scrim} aria-hidden="true" />
 
       <div className={s.grid}>
-        <div className={s.index}>
-          <div className={s.indexTop}>
-            <p className={s.eyebrow}>02 <i>/</i> Selected Works</p>
+        <div className={s.left}>
+          <div className={s.index}>
             <h2 id="engineering-line" className={s.h2}>Selected Works</h2>
             <ProjectSelector projects={projects} selected={sel} onSelect={choose} />
           </div>
 
-        </div>
-
-        <ExhibitStage project={p} leaving={leaving} />
-
-        <div className={s.info} aria-live="polite">
+          <div className={s.info} aria-live="polite">
             <div className={s.infoTop}>
-              <p className={s.infoT}>{p.title}</p>
+              {p.url ? (
+                <a href={p.url} target="_blank" rel="noopener noreferrer" className={s.enterLink}>Enter System →</a>
+              ) : (
+                <span className={s.enterDisabled}>Not yet published</span>
+              )}
               <p className={s.inquiry}>{p.inquiry}</p>
             </div>
             <div className={s.infoBottom}>
@@ -74,12 +73,11 @@ export default function EngineeringShowcase({ projects, src }: { projects: Proje
                   </ul>
                 </div>
               </div>
-              {p.url
-                ? <a href={p.url} target="_blank" rel="noopener noreferrer" className={s.enter}>Enter System ↗</a>
-                : <span className={s.noUrl}>Not yet published</span>}
             </div>
           </div>
+        </div>
 
+        <ExhibitStage project={p} leaving={leaving} />
       </div>
     </section>
   );

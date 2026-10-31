@@ -11,7 +11,7 @@ export type Experiment = {
 export const ROOT_DOMAIN = "binary1702.com";
 
 export const experiments: Experiment[] = [
-  { slug: "anatomy", label: "Anatomy" },
+  { slug: "skeletor", label: "Skeletor" },
   { slug: "bible-study", label: "Bible Study" },
   { slug: "dogs", label: "Dogs" },
   { slug: "financials", label: "Financials" },

@@ -27,6 +27,22 @@
 }
 
 /* ============================================================
+   Hero Typography: Cinzel (Imperial Roman)
+   Section Typography Options (1980s Retro Computing):
+   1. DotGothic16 - VHS/video overlay aesthetic (VCR OSD alternative)
+   2. IBM Plex Mono - Classic IBM corporate computing
+   3. VT323 - Vintage CRT terminals
+   4. Press Start 2P - 1980s arcade typography
+   5. Special Elite - Machine/typewriter aesthetic (OCR-A alternative)
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
+
+/* ============================================================
    Binary1702 — design tokens
    Light theme lives on :root; .theme-dark re-maps the same
    variables, so a page opts into dark by wrapping its root div.
@@ -36,6 +52,10 @@
   --theme-fade: 0.3s; /* theme cross-fade duration */
   --footer-height: 5.5rem;
   --footer-clearance: 2rem;
+  /* VT323 - 1980s CRT terminal font */
+  --tech-font: 'VT323', monospace;
+  --tech-weight: 400;
+  --tech-spacing: 0.08em;
   --paper: #F5F2EA; --muted: #ECE8DF; --ink: #141414; --graphite: #565656;
   --faint: #6E6E6E; --rule: #CFC8BC; --sig: #2F2348; --sig-text: #2F2348; --sel: #E4DFD2;
   --room-bg: #1A1A22; --room-fg: #F5F2EA; --room-muted: #CFC8BC; --room-rule: #F5F2EA;

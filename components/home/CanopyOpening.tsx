@@ -14,8 +14,8 @@ import CanopyField from "./CanopyField";
    no scrub library — scroll stays scroll, on every device.
    ------------------------------------------------------------------ */
 
-const mono = "ui-monospace, 'SF Mono', Menlo, monospace";
-const serif = "'Playfair Display', Georgia, serif";
+const techFont = "var(--tech-font, 'VT323'), monospace";
+const imperial = "'Cinzel', 'Times New Roman', serif";
 
 export default function CanopyOpening() {
   const ref = useRef<HTMLDivElement>(null);
@@ -66,22 +66,75 @@ export default function CanopyOpening() {
         />
         <div
           style={{
-            position: "relative", fontFamily: mono, fontWeight: 500, fontSize: "clamp(11px, 1vw, 13px)", letterSpacing: ".46em",
+            position: "relative", fontFamily: techFont, fontWeight: 500, fontSize: "clamp(11px, 1vw, 13px)", letterSpacing: ".46em",
             textTransform: "uppercase", textIndent: ".46em", color: "rgba(242,239,231,.72)", textShadow: "0 0 20px rgba(0,0,0,1)",
             opacity: ready ? 1 : 0, transition: "opacity 2.4s ease .6s",
           }}
         >
           <span style={{ color: "#B9AEE6" }}>Binary</span> 1702
         </div>
+
+        {/* Imperial Typography — Monumental Cinzel */}
         <h1
           style={{
-            position: "relative", margin: 0, fontFamily: serif, fontWeight: 400, fontSize: "clamp(2.2rem, 5.2vw, 4.6rem)", lineHeight: 1.04,
-            letterSpacing: "-0.015em", color: "#F2EFE7", maxWidth: "14ch", textWrap: "balance",
+            position: "relative",
+            margin: 0,
+            textAlign: "center",
+            maxWidth: "18ch",
+            textWrap: "balance",
             textShadow: "0 1px 0 rgba(0,0,0,.6), 0 0 30px rgba(0,0,0,.95), 0 0 100px rgba(0,0,0,.9)",
-            opacity: ready ? 1 : 0, transform: ready ? "none" : "translateY(8px)", transition: "opacity 2.6s ease 1.4s, transform 2.6s ease 1.4s",
+            opacity: ready ? 1 : 0,
+            transform: ready ? "none" : "translateY(8px)",
+            transition: "opacity 2.6s ease 1.4s, transform 2.6s ease 1.4s",
           }}
         >
-          Building the Eighth Wonder of the World.
+          <span style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0 }}>
+            {/* BUILDING THE */}
+            <span style={{
+              fontFamily: imperial,
+              fontWeight: 500,
+              fontSize: "clamp(1rem, 2.2vw, 1.8rem)",
+              lineHeight: 1.1,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              color: "rgba(242,239,231,0.65)",
+              marginBottom: "0.3em",
+            }}>
+              Building the
+            </span>
+
+            {/* EIGHTH WONDER — THE MONUMENT */}
+            <span style={{
+              fontFamily: imperial,
+              fontWeight: 700,
+              fontSize: "clamp(3rem, 9vw, 8rem)",
+              lineHeight: 0.9,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              color: "#F2EFE7",
+              textShadow: `
+                0 0 60px rgba(185,174,230,0.3),
+                0 0 120px rgba(185,174,230,0.15),
+                0 2px 0 rgba(0,0,0,.8)
+              `,
+              marginBottom: "0.25em",
+            }}>
+              Eighth Wonder
+            </span>
+
+            {/* OF THE WORLD */}
+            <span style={{
+              fontFamily: imperial,
+              fontWeight: 500,
+              fontSize: "clamp(1.2rem, 2.8vw, 2.2rem)",
+              lineHeight: 1.1,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              color: "rgba(242,239,231,0.65)",
+            }}>
+              of the World.
+            </span>
+          </span>
         </h1>
       </div>
 
@@ -89,7 +142,7 @@ export default function CanopyOpening() {
         aria-hidden="true"
         style={{
           position: "absolute", left: 0, right: 0, bottom: "max(26px, env(safe-area-inset-bottom))", textAlign: "center",
-          fontFamily: mono, fontSize: 10, letterSpacing: ".34em", textTransform: "uppercase", color: "rgba(242,239,231,.32)",
+          fontFamily: techFont, fontSize: 10, letterSpacing: ".34em", textTransform: "uppercase", color: "rgba(242,239,231,.32)",
           opacity: ready ? 1 : 0, transition: "opacity 2s ease 4s", pointerEvents: "none",
         }}
       >

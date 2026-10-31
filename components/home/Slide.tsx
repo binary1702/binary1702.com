@@ -21,7 +21,7 @@ export type SystemKey = keyof typeof SYSTEMS;
    optional mono subline. Nothing else.
    ------------------------------------------------------------------ */
 
-const mono = "ui-monospace, 'SF Mono', Menlo, monospace";
+const techFont = "var(--tech-font, 'VT323'), monospace";
 const serif = "'Playfair Display', Georgia, serif";
 
 type Props = {
@@ -81,7 +81,7 @@ export default function Slide({ id, index, label, src, system, cycle = false, ce
           padding: left ? "0 clamp(24px, 6vw, 96px) clamp(56px, 9vh, 110px)" : "0 24px", textAlign: left ? "left" : "center", gap: 18,
         }}
       >
-        <div style={{ fontFamily: mono, fontSize: 11, letterSpacing: ".4em", textTransform: "uppercase", color: "rgba(242,239,231,.55)" }}>
+        <div style={{ fontFamily: techFont, fontSize: 11, letterSpacing: ".4em", textTransform: "uppercase", color: "rgba(242,239,231,.55)" }}>
           {index} <span style={{ margin: "0 10px", color: "rgba(242,239,231,.3)" }}>/</span> {label}
         </div>
         <h2
@@ -94,7 +94,7 @@ export default function Slide({ id, index, label, src, system, cycle = false, ce
           {line}
         </h2>
         {sub && (
-          <div style={{ fontFamily: mono, fontSize: 12, letterSpacing: ".18em", lineHeight: 1.8, color: "rgba(242,239,231,.6)", maxWidth: "66ch" }}>
+          <div style={{ fontFamily: techFont, fontSize: 12, letterSpacing: ".18em", lineHeight: 1.8, color: "rgba(242,239,231,.6)", maxWidth: "66ch" }}>
             {sub}
           </div>
         )}

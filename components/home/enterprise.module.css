@@ -1,0 +1,444 @@
+/* ============================================================
+   Enterprise Transformations — Refined luxury presentation.
+
+   Quiet. Monumental. Expensive. Confident.
+   Luxury editorial design meets sophisticated technology.
+   ============================================================ */
+
+.section {
+  --ivory: #F2EFE7;
+  --ivory-muted: rgba(242, 239, 231, 0.55);
+  --ivory-faint: rgba(242, 239, 231, 0.32);
+  --ivory-subtle: rgba(242, 239, 231, 0.18);
+  --line: rgba(242, 239, 231, 0.08);
+  --accent: #C98A3C;
+  --imperial: 'Cinzel', 'Times New Roman', serif;
+  --tech: var(--tech-font, 'VT323'), monospace;
+  /* the editorial system: one neutral grotesk for every label around the monument */
+  --sans: 'Helvetica Neue', 'Neue Haas Grotesk Text', 'Neue Haas Grotesk Display', Helvetica, Arial, system-ui, sans-serif;
+  --monument: #F2EFE8;
+
+  position: relative;
+  min-height: 100lvh;
+  background: #000;
+  color: var(--ivory);
+  overflow: hidden;
+  z-index: 1;
+}
+
+.section * {
+  box-sizing: border-box;
+}
+
+/* ---- Oceanic ASCII backdrop ---- */
+.field {
+  position: absolute;
+  inset: 0;
+  opacity: 1; /* OceanicField handles its own subtlety */
+}
+
+.scrim {
+  /* soft, edge-less darkening only where type sits: a wide ellipse behind the title block,
+     and gentle top/bottom fades for the label row and the CTA. The ocean itself is untouched. */
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 48% 34% at 50% 50%, rgba(0, 0, 0, 0.74) 0%, rgba(0, 0, 0, 0.5) 42%, rgba(0, 0, 0, 0.18) 70%, rgba(0, 0, 0, 0) 100%),
+    radial-gradient(ellipse 30% 16% at 50% 100%, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0) 100%),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.62) 0%, rgba(0, 0, 0, 0) 22%, rgba(0, 0, 0, 0) 80%, rgba(0, 0, 0, 0.42) 100%);
+}
+
+/* ---- Main grid layout ---- */
+.grid {
+  position: relative;
+  height: 100svh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 0;
+  --pad-x: clamp(40px, 10vw, 140px); /* shared with the carousel so slides line up with the label row */
+  padding: clamp(56px, 10vh, 100px) var(--pad-x);
+}
+
+/* ---- Section label (top) ---- */
+.sectionLabel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: clamp(32px, 5vh, 56px);
+  border-bottom: 1px solid var(--line);
+}
+
+.labelText,
+.labelNum {
+  position: relative;
+  isolation: isolate;
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: 12.5px;
+  line-height: 1;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--monument);
+  opacity: 1;
+}
+
+/* ---- Carousel: pager (top-right) + full-width sliding track ---- */
+.pager {
+  display: flex;
+  gap: 22px;
+}
+
+button.labelNum {
+  padding: 6px 0;
+  margin: -6px 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  opacity: 0.42;
+  transition: opacity 250ms ease;
+}
+
+button.labelNum:hover,
+button.labelNum:focus-visible {
+  opacity: 0.8;
+  outline: none;
+}
+
+button.labelNum[aria-selected="true"] {
+  opacity: 1;
+}
+
+/* the lit number gets a hairline under it */
+button.labelNum::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0.22em;
+  bottom: -4px;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transition: transform 500ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+button.labelNum[aria-selected="true"]::after {
+  transform: scaleX(1);
+}
+
+.viewport {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  /* let the frosted bands breathe past the edges without clipping the type */
+  margin: 0 calc(-1 * var(--pad-x));
+}
+
+.track {
+  display: flex;
+  height: 100%;
+  transition: transform 1100ms cubic-bezier(0.65, 0, 0.2, 1);
+}
+
+.slide {
+  flex: 0 0 100%;
+  min-width: 0;
+  height: 100%;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  padding: 0 var(--pad-x);
+}
+
+/* ---- Caution state (a slide that isn't live yet) ----
+   A 'color' blend keeps the ocean's light and shape and swaps its hue for traffic-light
+   yellow; it fades in and out with the slide. The ASCII renderer itself is untouched. */
+.cautionTint {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: #FFC20E;
+  mix-blend-mode: color;
+  opacity: 0;
+  transition: opacity 1100ms cubic-bezier(0.65, 0, 0.2, 1);
+}
+
+.caution .cautionTint {
+  opacity: 1;
+}
+
+/* ---- Hero section (center) ---- */
+.hero {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 0;
+}
+
+.heroContent {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: clamp(32px, 6vh, 72px); /* generous separation between monument and classification */
+}
+
+/* Monumental client name — reduced ~15-20% */
+.clientName {
+  margin: 0;
+  font-family: var(--imperial);
+  font-weight: 500;
+  font-size: clamp(3.2rem, 10vw, 8rem); /* Reduced from 12vw/10rem */
+  line-height: 0.95;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  /* solid, full-opacity ivory: no blend, no glow; the scrim behind does the separating */
+  color: var(--monument);
+  opacity: 1;
+  mix-blend-mode: normal;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Hero statement — elegant two-line display */
+.heroStatement {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35em; /* Deliberate line spacing */
+}
+
+.statementLine {
+  /* an architectural classification, not a subtitle */
+  display: block;
+  position: relative;
+  isolation: isolate;
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: clamp(0.85rem, 1.25vw, 1.05rem);
+  line-height: 1.5;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--monument);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- Frosted bands behind the small type ----
+   Darkening alone left the ASCII's fine detail intact at the same scale as the letters, so
+   thin type read as more ASCII. A blur removes that detail locally (colour and motion still
+   show through as a soft wash); the radial mask feathers the band so it has no visible edge. */
+.labelText::before,
+.labelNum::before,
+.statementLine::before,
+.cta::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -16px -36px;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.28);
+  -webkit-backdrop-filter: blur(9px) brightness(0.6);
+  backdrop-filter: blur(9px) brightness(0.6);
+  -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 55%, transparent 100%);
+  mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 55%, transparent 100%);
+}
+
+.statementLine::before {
+  inset: -22px -64px;
+}
+
+.labelNum::before {
+  inset: -16px -24px;
+}
+
+/* ---- Context section (bottom) ---- */
+.context {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-top: clamp(32px, 5vh, 56px);
+  border-top: 1px solid var(--line);
+}
+
+/* Minimal text link CTA */
+.cta {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  isolation: isolate;
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 1;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--monument);
+  padding: 6px 0;
+  border: none;
+  background: transparent;
+  text-decoration: none;
+}
+
+/* underline reveal: a hairline that draws in from the left on hover */
+.cta::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cta:hover::after,
+.cta:focus-visible::after {
+  transform: scaleX(1);
+}
+
+.cta:focus-visible {
+  outline: none;
+}
+
+.cta svg {
+  opacity: 1;
+  transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cta:hover svg,
+.cta:focus-visible svg {
+  transform: translate(2px, -2px);
+}
+
+/* ---- Animation states ---- */
+.live .clientName {
+  animation: monumentReveal 1.4s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+}
+
+.live .heroStatement {
+  animation: fadeUp 1s ease 0.7s both;
+}
+
+.live .cta {
+  animation: fadeUp 0.8s ease 1s both;
+}
+
+@keyframes monumentReveal {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+    letter-spacing: 0.12em;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    letter-spacing: 0.05em;
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---- Reduced motion ---- */
+@media (prefers-reduced-motion: reduce) {
+  .section * {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .live .clientName,
+  .live .heroStatement,
+  .live .cta {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---- Mobile responsive ---- */
+@media (max-width: 768px) {
+  .grid {
+    --pad-x: clamp(28px, 6vw, 48px);
+    padding: clamp(40px, 8vh, 56px) var(--pad-x);
+  }
+
+  .sectionLabel {
+    padding-bottom: clamp(20px, 4vh, 32px);
+  }
+
+  .labelText,
+  .labelNum {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+  }
+
+  .heroContent {
+    gap: clamp(20px, 3vh, 32px);
+  }
+
+  .clientName {
+    font-size: clamp(2.2rem, 14vw, 4rem);
+  }
+
+  .statementLine {
+    font-size: clamp(0.72rem, 2.9vw, 0.88rem);
+    letter-spacing: 0.14em;
+    white-space: normal;
+    text-wrap: balance;
+  }
+
+  .context {
+    padding-top: clamp(20px, 4vh, 32px);
+  }
+
+  .cta {
+    font-size: 11px;
+    letter-spacing: 0.22em;
+  }
+}
+
+/* ---- Extra small screens ---- */
+@media (max-width: 480px) {
+  .grid {
+    --pad-x: 24px;
+    padding: 32px var(--pad-x);
+  }
+
+  /* keep 001 in the top-right corner even on the narrowest phones */
+  .sectionLabel {
+    gap: 12px;
+  }
+
+  .labelText,
+  .labelNum {
+    font-size: 9.5px;
+    letter-spacing: 0.18em;
+  }
+
+  .clientName {
+    font-size: clamp(1.8rem, 16vw, 3rem);
+  }
+
+  .statementLine {
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+  }
+
+  .cta {
+    font-size: 10px;
+  }
+}
