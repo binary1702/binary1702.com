@@ -17,6 +17,28 @@ type Star = [string, string, number, number, number, string, number | null, stri
 type Con = { a: string; n: string; l: string[][] };
 type Sky = { source: string; stars: Star[]; constellations: Con[] };
 
+/* The catalogue names constellations by meaning ("Fishes"); stars carry the Latin name ("Canis Major").
+   The IAU Latin names, by abbreviation, are the common key — and the names people know. */
+const LATIN: Record<string, string> = {
+  And: "Andromeda", Ant: "Antlia", Aps: "Apus", Aql: "Aquila", Aqr: "Aquarius", Ara: "Ara", Ari: "Aries", Aur: "Auriga", Boo: "Boötes",
+  CMa: "Canis Major", CMi: "Canis Minor", CVn: "Canes Venatici", Cae: "Caelum", Cam: "Camelopardalis", Cap: "Capricornus", Car: "Carina",
+  Cas: "Cassiopeia", Cen: "Centaurus", Cep: "Cepheus", Cet: "Cetus", Cha: "Chamaeleon", Cir: "Circinus", Cnc: "Cancer", Col: "Columba",
+  Com: "Coma Berenices", CrA: "Corona Australis", CrB: "Corona Borealis", Crt: "Crater", Cru: "Crux", Crv: "Corvus", Cyg: "Cygnus",
+  Del: "Delphinus", Dor: "Dorado", Dra: "Draco", Equ: "Equuleus", Eri: "Eridanus", For: "Fornax", Gem: "Gemini", Gru: "Grus", Her: "Hercules",
+  Hor: "Horologium", Hya: "Hydra", Hyi: "Hydrus", Ind: "Indus", LMi: "Leo Minor", Lac: "Lacerta", Leo: "Leo", Lep: "Lepus", Lib: "Libra",
+  Lup: "Lupus", Lyn: "Lynx", Lyr: "Lyra", Men: "Mensa", Mic: "Microscopium", Mon: "Monoceros", Mus: "Musca", Nor: "Norma", Oct: "Octans",
+  Oph: "Ophiuchus", Ori: "Orion", Pav: "Pavo", Peg: "Pegasus", Per: "Perseus", Phe: "Phoenix", Pic: "Pictor", PsA: "Piscis Austrinus",
+  Psc: "Pisces", Pup: "Puppis", Pyx: "Pyxis", Ret: "Reticulum", Scl: "Sculptor", Sco: "Scorpius", Sct: "Scutum", Ser: "Serpens", Sex: "Sextans",
+  Sge: "Sagitta", Sgr: "Sagittarius", Tau: "Taurus", Tel: "Telescopium", TrA: "Triangulum Australe", Tri: "Triangulum", Tuc: "Tucana",
+  UMa: "Ursa Major", UMi: "Ursa Minor", Vel: "Vela", Vir: "Virgo", Vol: "Volans", Vul: "Vulpecula",
+};
+const ABBR_OF_LATIN: Record<string, string> = Object.fromEntries(Object.entries(LATIN).map(([a, n]) => [n, a]));
+/* the twelve figures of the zodiac, lit when nothing is hovered so the turning globe always shows them */
+const ZODIAC = ["Ari", "Tau", "Gem", "Cnc", "Leo", "Vir", "Lib", "Sco", "Sgr", "Cap", "Aqr", "Psc"];
+const ZODIAC_SET = new Set(ZODIAC);
+const conAbbr = (starCon: string) => ABBR_OF_LATIN[starCon] ?? starCon; // a star's constellation field → abbreviation
+const latinName = (abbr: string, fallback?: string) => LATIN[abbr] ?? fallback ?? abbr;
+
 const LAT = 40.7128, LON = -74.0060; // New York City — the app's default observer
 const R = 350, CX = 400, CY = 374, VH = 796; // the whole globe, as large as the frame allows; caption band below
 const TILT0 = 24; // how far the globe leans its north pole toward the viewer, at rest
@@ -172,8 +194,10 @@ export default function GaiaExhibit() {
   }, [hover, con]);
   const showStar = hover ?? (con ? null : last.star);
   const hovered = sky && showStar ? sky.stars.find((x) => x[0] === showStar) : null;
-  const litCon = con ?? hovered?.[5] ?? (hover ? null : last.con);
-  const conName = sky?.constellations.find((c) => c.a === litCon)?.n; // litCon is always an abbreviation
+  const litCon = con ?? (hovered ? conAbbr(hovered[5]) : null) ?? (hover ? null : last.con); // always an abbreviation
+  // what is lit: the one figure under (or last under) the pointer; otherwise the zodiac
+  const lit = litCon ? new Set([litCon]) : ZODIAC_SET;
+  const conName = litCon ? latinName(litCon, sky?.constellations.find((c) => c.a === litCon)?.n) : "The Zodiac";
   const when = new Date(t);
   const visible = placed ? [...placed.values()].filter((p) => p.alt > 0).length : 0;
   const [still, setStill] = useState(false);
@@ -266,8 +290,8 @@ export default function GaiaExhibit() {
             centre with a little overshoot, lifts on a shadow, shows its stars, and is drawn last so
             it sits on top of everything else. */}
         <g filter="url(#gaia-glow)">
-        {sky && placed && [...sky.constellations].sort((a, b) => Number(a.a === litCon) - Number(b.a === litCon)).map((c) => {
-          const on = c.a === litCon;
+        {sky && placed && [...sky.constellations].sort((a, b) => Number(lit.has(a.a)) - Number(lit.has(b.a))).map((c) => {
+          const on = lit.has(c.a);
           const segs = c.l
             .map((ln) => ln.map((id) => placed.get(id)).filter((p): p is GP & { alt: number } => !!p && p.z > 0.02))
             .filter((pts) => pts.length >= 2);
@@ -290,7 +314,7 @@ export default function GaiaExhibit() {
                   return (<g key={i}>
                     {/* wide invisible stroke: the hover target, much fatter than the visible line */}
                     <polyline points={d} fill="none" stroke="transparent" strokeWidth={18} strokeLinecap="round" strokeLinejoin="round" pointerEvents="stroke" />
-                    <polyline points={d} fill="none" stroke={on ? AMBER : PHOS} strokeOpacity={on ? 1 : (litCon ? 0.18 : conLevel(c.a)) * (up ? 1 : 0.4) * (0.35 + 0.65 * depth)} strokeWidth={on ? 2.6 : 2.2} strokeLinecap="square" strokeLinejoin="miter" style={{ transition: "stroke-opacity 250ms ease" }} pointerEvents="none" />
+                    <polyline points={d} fill="none" stroke={on ? AMBER : PHOS} strokeOpacity={on ? 1 : (litCon ? 0.18 : conLevel(c.a) * 0.6) * (up ? 1 : 0.4) * (0.35 + 0.65 * depth)} strokeWidth={on ? 2.6 : 2.2} strokeLinecap="square" strokeLinejoin="miter" style={{ transition: "stroke-opacity 250ms ease" }} pointerEvents="none" />
                   </g>);
                 })}
                 {/* its stars ride along with the figure while it's lifted */}
@@ -309,7 +333,7 @@ export default function GaiaExhibit() {
           const p = placed.get(st[0]); if (!p || p.z <= 0.02) return null;
           const mag = st[4];
           const r = Math.max(0.9, 3.4 - mag * 0.6) * (0.6 + 0.4 * p.z);
-          const on = hover === st[0], inCon = litCon && st[5] === litCon;
+          const on = hover === st[0], inCon = lit.has(conAbbr(st[5]));
           const a = Math.min(1, 0.55 + (3 - mag) * 0.18) * (p.alt > 0 ? 1 : 0.45) * (0.4 + 0.6 * p.z);
           const [cr, cg, cb] = starColor(st[7]);
           const sz = on ? r * 2 + 3 : r * 2;
@@ -345,7 +369,7 @@ export default function GaiaExhibit() {
             <>
               <text x={CX} y={VH - 40} textAnchor="middle" className={s.tiny} style={{ fill: AMBER, fontSize: 22, fontWeight: 700, paintOrder: "stroke", stroke: "rgba(0,0,0,.85)", strokeWidth: 4 }}>{(hovered[1] || hovered[0]).toUpperCase()}</text>
               <text x={CX} y={VH - 14} textAnchor="middle" className={s.tiny} style={{ fill: "#F2EFE7", fontSize: 13.5 }}>
-                {(sky?.constellations.find((c) => c.a === hovered[5])?.n ?? hovered[5]).toUpperCase()} · MAG {hovered[4].toFixed(2)}{hovered[6] ? ` · ${Math.round(hovered[6]).toLocaleString("en-US")} LY` : ""}{hovered[7] ? ` · ${hovered[7].toUpperCase()}` : ""}
+                {latinName(conAbbr(hovered[5]), hovered[5]).toUpperCase()} · MAG {hovered[4].toFixed(2)}{hovered[6] ? ` · ${Math.round(hovered[6]).toLocaleString("en-US")} LY` : ""}{hovered[7] ? ` · ${hovered[7].toUpperCase()}` : ""}
               </text>
             </>
           ) : conName ? (

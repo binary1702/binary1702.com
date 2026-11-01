@@ -41,6 +41,15 @@ export class PointCloudSystem implements GenerativeSystem {
   hovered = -1;
   /** seconds; the cloud completes a turn in ~48 s */
   spin = 0.13;
+  /** bounding radii of the centred cloud: whole (height bound) and in the x–z plane (width bound) */
+  private radius = 0.5; private radiusXZ = 0.5;
+  /** measured worst-case half-extents of the projected cloud (any yaw, pitch within the clamp) */
+  private reachX = 0.5; private reachY = 0.5;
+  /** fraction of the frame the cloud may fill at its largest possible projection (any rotation) */
+  fill = 0.94;
+  /** "sphere": conservative bound (phones — the frame hugs the figure); "measured": exact sampled reach */
+  fit: "sphere" | "measured" = "sphere";
+  private static readonly CAM = 2.6;
 
   /* ---- direct manipulation: click-and-drag spins the cloud ----
      While held, the cloud follows the hand exactly. On release it coasts
@@ -77,6 +86,33 @@ export class PointCloudSystem implements GenerativeSystem {
     const n = data.i.length;
     this.px = new Float32Array(n); this.py = new Float32Array(n); this.pz = new Float32Array(n); this.si = new Uint16Array(n); this.ri = new Uint8Array(n);
     for (let k = 0; k < n; k++) { this.px[k] = data.x[k] / 4095 - 0.5; this.py[k] = data.y[k] / 4095 - 0.5; this.pz[k] = data.z[k] / 4095 - 0.5; this.si[k] = data.i[k]; this.ri[k] = data.r[k]; }
+    // centre the cloud on its bounding box, then measure how far it can reach under any rotation:
+    // rXZ bounds the projected width (yaw turns about the vertical axis), r bounds the height (pitch tilts).
+    let lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
+    for (let k = 0; k < n; k++) { lo = [Math.min(lo[0], this.px[k]), Math.min(lo[1], this.py[k]), Math.min(lo[2], this.pz[k])]; hi = [Math.max(hi[0], this.px[k]), Math.max(hi[1], this.py[k]), Math.max(hi[2], this.pz[k])]; }
+    const c = [(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2];
+    let r = 0, rXZ = 0;
+    for (let k = 0; k < n; k++) {
+      const x = (this.px[k] -= c[0]), y = (this.py[k] -= c[1]), z = (this.pz[k] -= c[2]);
+      rXZ = Math.max(rXZ, x * x + z * z); r = Math.max(r, x * x + y * y + z * z);
+    }
+    this.radius = Math.sqrt(r); this.radiusXZ = Math.sqrt(rXZ);
+    // measured reach: project the cloud at every yaw and every allowed pitch and keep the widest
+    // it ever gets on each axis (perspective included). Tighter than the sphere bound, still a bound.
+    const cam = PointCloudSystem.CAM;
+    let ex = 0, ey = 0;
+    for (let a = 0; a < 36; a++) for (let b = -6; b <= 6; b++) {
+      const yaw = (a / 36) * Math.PI * 2, pitch = (b / 6) * 1.2 + 0.08;
+      const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+      for (let k = 0; k < n; k++) {
+        const x0 = this.px[k], y0 = this.py[k], z0 = this.pz[k];
+        const X = x0 * cy - z0 * sy, D = x0 * sy + z0 * cy;
+        const Y = y0 * cp - D * sp, Z = y0 * sp + D * cp;
+        const persp = cam / (cam + Z);
+        ex = Math.max(ex, Math.abs(X) * persp); ey = Math.max(ey, Math.abs(Y) * persp);
+      }
+    }
+    this.reachX = ex; this.reachY = ey;
     this.sx = new Float32Array(n); this.sy = new Float32Array(n); this.near = new Float32Array(n);
     this.title = data.system;
     this.description = `${data.totals.structures} structures · ${data.totals.points.toLocaleString("en-US")} sampled points of ${data.totals.vertices.toLocaleString("en-US")} vertices`;
@@ -111,9 +147,14 @@ export class PointCloudSystem implements GenerativeSystem {
     const cy = Math.cos(this.yaw), sy = Math.sin(this.yaw), cp = Math.cos(this.pitch), sp = Math.sin(this.pitch);
 
     density.fill(0); tint.fill(0);
-    const scale = rows * 1.55 * 0.98;          // the cloud's height ≈ the stage height
+    // Fit guarantee: the nearest a point can come is Z = -radius, where perspective enlarges it
+    // most. Size the cloud so that even then its widest reach stays inside the grid on both axes.
+    const cam = PointCloudSystem.CAM;
+    const maxPersp = cam / (cam - this.radius);
+    const scale = this.fit === "measured"
+      ? Math.min(cols / 2 / this.reachX, (rows * 1.55) / 2 / this.reachY) * this.fill
+      : Math.min(cols / 2 / this.radiusXZ, (rows * 1.55) / 2 / this.radius) / maxPersp * this.fill;
     const cxs = cols / 2, cys = rows / 2;
-    const cam = 2.6;
     const n = this.si.length;
     const clusterSet = new Set<number>();
 

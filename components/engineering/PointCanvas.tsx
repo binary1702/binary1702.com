@@ -38,6 +38,9 @@ export default function PointCanvas({ system, paused, white }: { system: PointCl
       W = canvas.clientWidth; H = canvas.clientHeight;
       canvas.width = W * dpr; canvas.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       system.resize(Math.max(1, Math.floor(W / CW)), Math.max(1, Math.floor(H / CH)));
+      // phones: conservative fit (the frame is tight around the figure); desktop: the measured reach, so the figure uses the room it has
+      const phone = window.matchMedia("(max-width: 860px)").matches;
+      system.fit = phone ? "sphere" : "measured"; system.fill = phone ? 0.94 : 0.96;
     };
     fit();
 

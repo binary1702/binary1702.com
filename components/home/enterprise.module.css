@@ -442,3 +442,67 @@ button.labelNum[aria-selected="true"]::after {
     font-size: 10px;
   }
 }
+
+/* ---- Mobile header: one centred column instead of a cramped left/right row ----
+   The label drops away from the top edge, and the 001 · 002 controls sit centred beneath it,
+   so the top of the slide reads as a small, quiet masthead rather than a crowded strip. */
+@media (max-width: 768px) {
+  .sectionLabel {
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding-top: clamp(28px, 6vh, 56px);
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+
+  .labelText {
+    text-align: center;
+  }
+
+  /* AQUATECH stays centred in the slide; the CTA floats halfway between it and the bottom edge,
+     so the lower half of the screen isn't one long empty run */
+  .slide {
+    position: relative;
+    grid-template-rows: 1fr;
+  }
+
+  .context {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 76%;
+    transform: translateY(-50%);
+    padding-top: 0;
+    border-top: none;
+  }
+
+  .pager {
+    position: relative;
+    isolation: isolate;
+    justify-content: center;
+    gap: 30px;
+  }
+
+  /* one frosted band behind the whole 001 · 002 row, same treatment as the other small type */
+  .pager::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: -14px -40px;
+    pointer-events: none;
+    background: rgba(0, 0, 0, 0.3);
+    -webkit-backdrop-filter: blur(9px) brightness(0.6);
+    backdrop-filter: blur(9px) brightness(0.6);
+    -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 55%, transparent 100%);
+    mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 55%, transparent 100%);
+  }
+
+  button.labelNum {
+    opacity: 0.7; /* the inactive number needs more presence over the busy ocean on a phone */
+  }
+
+  button.labelNum[aria-selected="true"] {
+    opacity: 1;
+  }
+}

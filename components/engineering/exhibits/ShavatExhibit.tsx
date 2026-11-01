@@ -25,7 +25,8 @@ const CAT_TINT: Record<string, [number, number, number]> = {
 };
 
 /* quarters of the city, in canonical order; the exhibit opens on the Pentateuch */
-const SECTIONS: { key: string; label: string; cats: string[]; add?: string[]; drop?: string[] }[] = [
+type Section = { key: string; label: string; cats: string[]; add?: string[]; drop?: string[] };
+const SECTIONS: Section[] = [
   { key: "pentateuch", label: "Pentateuch", cats: ["pentateuch"] },
   { key: "history", label: "History", cats: ["historical"] },
   { key: "wisdom", label: "Wisdom", cats: ["wisdom"], add: ["lamentations"] },
@@ -37,6 +38,9 @@ const SECTIONS: { key: string; label: string; cats: string[]; add?: string[]; dr
   { key: "revelation", label: "Revelation", cats: ["apocalypse"] },
 ];
 const DEFAULT_SECTION = SECTIONS.findIndex((x) => x.key === "pentateuch");
+/* on a phone the frame is too small for a whole quarter, so the walk is one book at a time (Genesis, Exodus, …) */
+const MOBILE_MQ = "(max-width: 860px)";
+const bookSections = (d: Data): Section[] => d.books.map((b) => ({ key: b.slug, label: b.name, cats: [], add: [b.slug] }));
 
 /* the map: districts packed left→right, top→bottom; each district is a block of cells.
    every district in a row is the same height, so the labels above share one baseline;
@@ -57,8 +61,17 @@ export default function ShavatExhibit() {
   const [book, setBook] = useState<string | null>(null);
   const [sel, setSel] = useState<{ b: string; n: number } | null>(null);
   const [tick, setTick] = useState(0);
+  const [mobile, setMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia(MOBILE_MQ);
+    const on = () => setMobile(mq.matches); on();
+    mq.addEventListener("change", on); return () => mq.removeEventListener("change", on);
+  }, []);
   const [secIdx, setSecIdx] = useState(DEFAULT_SECTION);
-  const section = SECTIONS[secIdx];
+  const sections = useMemo(() => (mobile && data ? bookSections(data) : SECTIONS), [mobile, data]);
+  // the two lists have different lengths: when switching, land on Genesis / the Pentateuch rather than out of range
+  useEffect(() => { setSecIdx(mobile ? 0 : DEFAULT_SECTION); setBook(null); setSel(null); }, [mobile]);
+  const section = sections[Math.min(secIdx, sections.length - 1)];
   const [phase, setPhase] = useState<{ shown: boolean; dir: number; instant?: boolean }>({ shown: true, dir: 0 });
   const swapT = useRef<ReturnType<typeof setTimeout> | null>(null);
   const goTo = (target: number, dir: number) => {
@@ -76,7 +89,7 @@ export default function ShavatExhibit() {
   };
   const swapAt = useRef(0);
   useEffect(() => { swapAt.current = performance.now(); }, [secIdx, data]);
-  const go = (dir: number) => goTo((secIdx + dir + SECTIONS.length) % SECTIONS.length, dir);
+  const go = (dir: number) => goTo((secIdx + dir + sections.length) % sections.length, dir);
   useEffect(() => () => { if (swapT.current) clearTimeout(swapT.current); }, []);
   const raf = useRef(0);
 
@@ -151,8 +164,8 @@ export default function ShavatExhibit() {
   const hovered = data && book ? data.books.find((b) => b.slug === book) : null;
   const selBook = data && sel ? data.books.find((b) => b.slug === sel.b) : null;
   const selected = selBook && sel ? selBook.ch.find((c) => c.n === sel.n) : null;
-  const prev = SECTIONS[(secIdx - 1 + SECTIONS.length) % SECTIONS.length];
-  const next = SECTIONS[(secIdx + 1) % SECTIONS.length];
+  const prev = sections[(secIdx - 1 + sections.length) % sections.length];
+  const next = sections[(secIdx + 1) % sections.length];
   const navKey = (dir: number) => (e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(dir); } };
   const sectionChapters = layout ? layout.districts.reduce((a, d) => a + d.b.ch.length, 0) : 0;
   const sectionVerses = layout ? layout.districts.reduce((a, d) => a + d.b.ch.reduce((x, c) => x + c.v, 0), 0) : 0;
@@ -182,7 +195,22 @@ export default function ShavatExhibit() {
     <div className={s.stageBody} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
       <svg className={s.svg} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" role="group" aria-label={`Scripture as a city map: ${section.label}, ${layout?.districts.length ?? 0} books, ${sectionChapters} chapters`}
            onKeyDown={(e) => { if (e.key === "ArrowLeft") go(-1); if (e.key === "ArrowRight") go(1); }}>
-        {/* quarter navigation: ‹ previous · CURRENT · next › */}
+        {mobile ? (
+          /* phone: no title row (the district is labelled on the map itself); large chevrons flank the map at its mid-height */
+          <g>
+            {([-1, 1] as const).map((dir) => {
+              const label = dir < 0 ? prev.label : next.label;
+              const x = dir < 0 ? PAD + 18 : W - PAD - 18;
+              const cy = NAV_H + MAP_H / 2;
+              return (
+                <g key={dir} role="button" tabIndex={0} aria-label={`${dir < 0 ? "Previous" : "Next"}: ${label}`} onClick={() => go(dir)} onKeyDown={navKey(dir)} onMouseDown={(e) => e.preventDefault()} style={{ cursor: "pointer", outline: "none" }}>
+                  <rect x={x - 45} y={cy - 90} width={90} height={180} fill="transparent" />
+                  <text x={x} y={cy + 16} textAnchor="middle" className={s.serifT} style={{ fontSize: 64, fill: "rgba(242,239,231,.75)" }}>{dir < 0 ? "‹" : "›"}</text>
+                </g>
+              );
+            })}
+          </g>
+        ) : (
         <g>
           <g role="button" tabIndex={0} aria-label={`Previous: ${prev.label}`} onClick={() => go(-1)} onKeyDown={navKey(-1)} onMouseDown={(e) => e.preventDefault()} style={{ cursor: "pointer", outline: "none" }}>
             <rect x={PAD} y={8} width={170} height={28} fill="transparent" />
@@ -192,8 +220,8 @@ export default function ShavatExhibit() {
             <text x={W / 2} y={22} textAnchor="middle" className={s.serifT} style={{ fontSize: 20 }}>{section.label}</text>
           </g>
           <g>
-            {SECTIONS.map((x, i) => (
-              <circle key={x.key} cx={W / 2 - ((SECTIONS.length - 1) * 9) / 2 + i * 9} cy={34} r={i === secIdx ? 2.4 : 1.6}
+            {sections.map((x, i) => (
+              <circle key={x.key} cx={W / 2 - ((sections.length - 1) * 9) / 2 + i * 9} cy={34} r={i === secIdx ? 2.4 : 1.6}
                       fill={i === secIdx ? "#C98A3C" : "rgba(242,239,231,.3)"} style={{ cursor: "pointer" }}
                       onClick={() => goTo(i, i > secIdx ? 1 : -1)}><title>{x.label}</title></circle>
             ))}
@@ -203,12 +231,13 @@ export default function ShavatExhibit() {
             <text x={W - PAD} y={27} textAnchor="end" className={s.tiny} style={{ fill: "rgba(242,239,231,.55)", fontSize: 11 }}>{next.label.toUpperCase()}  ›</text>
           </g>
         </g>
+        )}
 
         <g style={fade}>
         {layout && layout.districts.map((d) => {
           const lit = book === d.b.slug;
           const dim = book !== null && !lit;
-          const [r, g, bl] = CAT_TINT[section.cats[0]] ?? [242, 239, 231];
+          const [r, g, bl] = CAT_TINT[section.cats[0] ?? d.b.cat] ?? [242, 239, 231];
           return (
             <g key={d.b.slug} onPointerEnter={() => setBook(d.b.slug)} onPointerLeave={() => setBook(null)} style={{ cursor: "pointer" }}>
               <rect x={d.x - 3} y={d.y - 3} width={d.w + 6} height={d.h + 6} fill="transparent" />
@@ -260,7 +289,7 @@ export default function ShavatExhibit() {
             <g style={fade}>
               {/* quiet summary */}
               <text x={W / 2} y={P0 + 48} textAnchor="middle" className={s.serifT} style={{ fontSize: 22, fill: "rgba(242,239,231,.85)" }}>
-                {stats.books} {stats.books === 1 ? "book" : "books"}, {sectionChapters} chapters
+                {mobile ? `${sectionChapters} chapters · ${secIdx + 1} / ${sections.length}` : `${stats.books} ${stats.books === 1 ? "book" : "books"}, ${sectionChapters} chapters`}
               </text>
               <text x={W / 2} y={P0 + 78} textAnchor="middle" className={s.tiny} style={{ fill: "rgba(242,239,231,.45)", fontSize: 11, letterSpacing: ".12em" }}>
                 HOVER A BOOK · CLICK A CHAPTER

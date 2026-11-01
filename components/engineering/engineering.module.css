@@ -10,7 +10,7 @@
   --serif: 'Playfair Display', Georgia, serif;
   --tech: var(--tech-font, 'Kode Mono'), monospace;
   --sans: 'Archivo Narrow', system-ui, sans-serif;
-  position: relative; min-height: 100lvh; background: #000; color: var(--ivory); overflow: hidden; z-index: 1;
+  position: relative; height: 100lvh; background: #000; color: var(--ivory); overflow: clip; z-index: 1; /* clip, not hidden: nothing can scroll the section and slide the backdrop away */
 }
 .section * { box-sizing: border-box; }
 .field { position: absolute; inset: 0; opacity: .6; }
@@ -141,34 +141,43 @@
 @media (min-width: 861px) {
   .gaiaBody { margin-top: -26px; height: calc(100% + 26px); } /* was -50px: sat too high */
 }
-
 /* ---- mobile: question → exhibit → engineering → link ---- */
 @media (max-width: 860px) {
-  .grid { height: 100svh; grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr) auto; gap: 18px; }
-  /* 1. selector list, centered */
+  .grid { height: 100svh; grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; gap: 8px; padding-top: clamp(56px, 8vh, 80px); padding-bottom: clamp(16px, 2.5vh, 24px); }
+  /* 1. selector list, centered — more spacing between items */
   .index { grid-column: 1; grid-row: 1; order: 1; text-align: center; }
-  .eyebrow { margin-bottom: 8px; }
+  .eyebrow { margin-bottom: 6px; }
   .h2 { display: none; }
-  .selector { justify-content: center; justify-items: center; }
-  .selector button { grid-template-columns: auto auto; gap: 10px; padding: 6px 0; text-align: center; color: rgba(242,239,231,.9); text-shadow: 0 1px 6px rgba(0,0,0,.9); }
+  .selector { justify-content: center; justify-items: center; gap: 4px; }
+  .selector button { grid-template-columns: auto auto; gap: 10px; padding: 10px 0; text-align: center; color: rgba(242,239,231,.9); text-shadow: 0 1px 6px rgba(0,0,0,.9); }
   .selector button span:first-child { color: rgba(242,239,231,.85); }
   .selector button[aria-selected="true"] { color: #fff; }
   .selector button[aria-selected="true"] span:first-child { color: var(--accent); }
   .selector button:focus-visible { outline: 0; }
   .eyebrow { color: rgba(242,239,231,.85); text-shadow: 0 1px 6px rgba(0,0,0,.9); }
-  /* no reserved reading strip under the exhibit on phones: the body gets the whole box */
-  .stageInner { gap: 0; grid-template-rows: minmax(0, 1fr) auto; }
-  .read { min-height: 0; }
   /* 2. the exhibit, filling the middle */
-  .stage { grid-column: 1; grid-row: 2; order: 2; min-height: 0; }
-  .stageBody { aspect-ratio: auto; min-height: 0; height: 100%; }
-  /* 3. title + question + link only; no engineering/technology lists */
-  .info { grid-column: 1; grid-row: 3; order: 3; display: grid; grid-template-rows: auto; margin-top: 0; text-align: center; }
-  .infoTop { gap: 8px; padding-bottom: 12px; justify-items: center; }
+  /* .stage is a stretched grid item (definite height in every engine, no percentage chain — Safari
+     would not resolve the old height:100% and parked the frame at the top). It centres its content. */
+  .stage { grid-column: 1; grid-row: 2; order: 2; min-height: 0; overflow: visible; display: grid; grid-template-rows: none; align-content: center; gap: 0; }
+  .stageInner { height: auto; gap: 0; grid-template-rows: auto auto; overflow: visible; }
+  /* ONE exhibit frame for every showcase: full width, a fixed shape, capped by the viewport; with
+     its caption (if any) it is centred in the row, so the slack splits evenly above and below */
+  .stageBody { aspect-ratio: 1 / 1.2; width: 100%; height: auto; max-height: 52svh; min-height: 0; align-self: auto; overflow: visible; }
+  /* a snap that lands a few px short (iOS Safari, top address bar) would show the previous chapter's
+     last rows: overlap it by a little so what shows is our own black and field */
+  .section { margin-top: -24px; padding-top: 24px; height: calc(100lvh + 24px); }
+  /* disable the rectangular backdrop on mobile — exhibits handle their own vignette */
+  .stageBody::before { display: none; }
+  .read { min-height: 0; }
+  /* 3. title + question + link — compact, no extra whitespace */
+  .info { grid-column: 1; grid-row: 3; order: 3; display: grid; grid-template-rows: auto; margin-top: 0; text-align: center; gap: 0; }
+  .infoTop { gap: 6px; padding-bottom: 0; justify-items: center; }
   .infoBottom { padding-top: 0; border-top: 0; grid-template-rows: auto; }
   .infoMid { display: none; }
-  .inquiry { font-size: 1.1rem; max-width: 30ch; }
+  .inquiry { font-size: 0.95rem; max-width: 26ch; line-height: 1.25; }
   .enter { justify-self: center; margin-top: 0; }
-  .enterFixed { position: static; display: block; text-align: center; margin-top: 16px; }
-  .noUrlFixed { position: static; display: block; text-align: center; margin-top: 16px; }
+  .enterLink { margin-top: 8px; display: inline-block; }
+  .enterDisabled { margin-top: 8px; display: inline-block; }
+  .enterFixed { position: static; display: block; text-align: center; margin-top: 8px; }
+  .noUrlFixed { position: static; display: block; text-align: center; margin-top: 8px; }
 }

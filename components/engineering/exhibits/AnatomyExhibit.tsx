@@ -125,9 +125,9 @@ export default function AnatomyExhibit() {
           }
 
           /* caption — one quiet line */
-          .an-cap { position: relative; z-index: 1; min-height: 28px; padding-top: 8px; text-align: center; } /* above the dark circle */
-          .an-one { margin: 0; font-family: 'Playfair Display', Georgia, serif; font-size: 15px; line-height: 1.4; color: rgba(242,239,231,.7); animation: anIn 500ms ease both; }
-          .an-one b { font-weight: 400; margin-right: 12px; font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 9.5px; letter-spacing: .26em; text-transform: uppercase; color: #C98A3C; }
+          .an-cap { position: relative; z-index: 1; min-height: 44px; padding-top: 10px; text-align: center; } /* above the dark circle */
+          .an-one { margin: 0; font-family: 'Playfair Display', Georgia, serif; font-size: 26px; line-height: 1.25; letter-spacing: .01em; color: rgba(242,239,231,.88); animation: anIn 500ms ease both; }
+          .an-one b { font-weight: 400; margin-right: 12px; font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 11px; letter-spacing: .26em; text-transform: uppercase; color: #C98A3C; }
           .an-one em { font-style: italic; color: rgba(242,239,231,.45); }
           @keyframes anIn { from { opacity: 0; } to { opacity: 1; } }
 
@@ -135,9 +135,13 @@ export default function AnatomyExhibit() {
             .an-parts { gap: 2px; }
             .an-parts button { font-size: 12px; letter-spacing: .18em; gap: 8px; }
             .an-parts button::after { display: none; }
-            .an-body { min-height: 320px; }
-            .an-stage { right: 88px !important; } /* leave the button column its own lane */
-            .an-halo { height: auto; width: 100vw; } /* never wider than the screen */
+            .an-body { position: relative; } /* size comes from the shared .stageBody frame */
+            .an-stage { left: -24px !important; right: 64px !important; width: auto !important; top: 0 !important; bottom: 0 !important; height: auto; } /* full height; canvas wider than its slot so the figure never clips, centred left of the part buttons */
+            /* the halo stays a circle, centred on the figure */
+            .an-halo { height: 130%; width: auto; aspect-ratio: 1; }
+            .an-cap { min-height: 44px; padding: 8px 12px; } /* no backdrop band — a rectangle reads as a hard edge; the halo already darkens behind */
+            .an-one { font-size: 22px; }
+            .an-one b { font-size: 9.5px; margin-right: 8px; }
           }
           @media (prefers-reduced-motion: reduce) { .an-one { animation: none !important; } }
         `}</style>
