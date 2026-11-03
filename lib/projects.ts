@@ -53,7 +53,7 @@ export const projects: Project[] = [
     category: "Night Sky",
     description: "The night sky over California, explained.",
     status: "Live",
-    url: "https://gaia-astrology.binary1702.com",
+    url: "https://gaia.binary1702.com",
     exhibit: "gaia",
     system: "The sky",
     featured: true,
