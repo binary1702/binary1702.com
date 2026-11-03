@@ -66,3 +66,34 @@ Camera presets and colours live at the top of `lib/aquatech/mapStyle.ts`. Amber 
 ## Type (this page only)
 
 Archivo at full width and weight 900 for display, and JetBrains Mono for readouts. Both load through `next/font/google` in `lib/aquatech/fonts.ts`, which self-hosts them at build time. The rest of the site keeps Playfair and Archivo Narrow.
+
+## Live operations (ops mode)
+
+A simulated service pipeline that runs entirely in the browser. Nothing is deployed server-side, so there is nothing to break during a pitch. It opens on its own as the descent lands, as a HUD across the bottom of the stage, and never stops: the red **×** only folds the HUD to its top row (**+** unfolds it). The HUD's measured height is passed to the map as camera padding, so follow / jump-to centre on the visible map.
+
+```
+TELEMETRY → DETECT → DISPATCH → EN ROUTE → ON SITE → VERIFIED → VALUE
+```
+
+| File | Role |
+|---|---|
+| `lib/aquatech/ops.ts` | The model (`OpsSim`): units, jobs, vans, events, KPIs. Pure TypeScript, seeded (`mulberry32`), `tick()` is the only mutator. |
+| `components/aquatech/MetroManilaMap.tsx` | Draws it: unit status via `feature-state`, fleet routes and vans as GeoJSON sources, ops cards, follow-van. Exposes `MapApi`. |
+| `components/aquatech/AquatechExperience.tsx` | The console (KPI rail, pipeline strip, fleet, event log) and the rAF loop that ticks the sim and refreshes the console ~4×/s. |
+| `public/data/aquatech/routes.json` | Real road routes, warehouse → each store within 25 km (327), baked from OSRM. |
+| `scripts/aquatech/bake-routes.mjs` | Rebuilds `routes.json`. Resumable; uses the public OSRM demo server, so it is a one-off bake, not a runtime dependency. |
+
+### What is real and what is modelled
+- **Real:** store locations (OSM), the warehouse location, road geometry and drive times (OSRM on OSM data).
+- **Modelled:** filter life, flow, TDS, the job mix, van count (8), service durations, and all money. The ROI tile is labelled *est.* and the console footer says the operation is simulated. The two money assumptions are constants at the top of `ops.ts`: `PHP_PER_DOWNTIME_HOUR` (14,500) and `DOWNTIME_PER_ALERT_HRS` (5.5). Change them there if Aquatech gives real figures.
+
+### Behaviour
+- The sim clock starts at the real Manila time and runs at `SIM_SPEED` (40×), so a 25-minute drive takes about 40 s. The day's "already completed" baseline is derived from hours since 06:00.
+- The dispatcher takes ~45 sim-seconds to commit a van; vans are chosen by job priority, then shortest drive. New work arrives at ~7.5 jobs/hour and throttles when four or more jobs are queued, so the fleet stays busy without a backlog.
+- One colour rule everywhere. Stores: green = OK, amber = needs service (due and alert share it; priority only affects dispatch order). Techs: blue = heading to a store / on site, red = returning to main office. Stores outside the 25 km territory turn dim ivory (network, not monitored). Service zones are a quiet shade with a hairline and a name (`zonePolygons()` in `ops.ts`), with no colour of their own.
+- Camera rule holds: in ops mode the camera moves only on a visitor's click (follow a van, jump to a unit from the log, Depot). Any gesture releases a follow.
+- Reduced motion: no route dash animation, no pulsing, no console fade-ins; the sim still runs.
+- Mobile: the console becomes a bottom sheet with the KPI row, the pipeline strip and a one-line ticker.
+
+### Tuning knobs (top of `ops.ts`)
+`SIM_SPEED`, `FLEET_SIZE`, `AVG_FLOW_LPM`, the job arrival rate in `tick()`, service durations in `arrive()`.

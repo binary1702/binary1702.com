@@ -3,7 +3,7 @@ import AquatechExperience from "@/components/aquatech/AquatechExperience";
 
 export const metadata: Metadata = {
   title: "Aquatech — Binary 1702",
-  description: "Aquatech: 700+ connections, one connected operation across Metro Manila.",
+  description: "Aquatech: Inventory operations at scale. From warehouse to installation, every piece of equipment accounted for.",
 };
 
 /* /client/aquatech — case study opening: the introduction and the city. */

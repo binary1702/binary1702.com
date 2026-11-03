@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AQUATECH_OFFICE } from "@/lib/aquatech/mapStyle";
 import { aqDisplay, aqMono } from "@/lib/aquatech/fonts";
+import { KIND_LABEL, OpsSim, RETURN_COLOR, ROUTES_URL, STATUS_COLOR, clock, fmtPhp, type JobKind, type KPI, type RoutesFile, type Stages, type VanState } from "@/lib/aquatech/ops";
+import type { MapApi } from "./MetroManilaMap";
 import s from "./aquatech.module.css";
 
 /* ------------------------------------------------------------------
@@ -13,6 +15,9 @@ import s from "./aquatech.module.css";
    intro    title holds over the city at altitude (veil ~80%)
    descend  title lifts away, veil clears, camera flies into Makati/BGC
    explore  instruments appear; the camera belongs to the visitor
+   ops      (inside explore) the live operations console replaces the
+            network panel; the simulation in lib/aquatech/ops.ts drives
+            the map through MapApi and this console through snapshots
 
    The map is client-only and loaded after first paint, so the title
    is on screen immediately and never waits on WebGL or tiles.
@@ -21,8 +26,6 @@ import s from "./aquatech.module.css";
 const MetroManilaMap = dynamic(() => import("./MetroManilaMap"), { ssr: false, loading: () => null });
 
 type Phase = "intro" | "descend" | "explore";
-const HOLD_MS = 5200; // minimum time the title owns the screen
-const HOLD_REDUCED_MS = 2600;
 
 const GLYPHS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#/<>=_";
 /** Title decode: each letter cycles through glyphs and locks in, left to right. */
@@ -58,6 +61,22 @@ function hasWebGL() {
   }
 }
 
+/* ---- console snapshot: what React renders, refreshed ~4×/s ---- */
+type VanRow = { id: string; label: string; state: VanState; eta: number; unit: string; kind: JobKind | null; done: number; progress: number };
+type Snap = { clock: string; kpi: KPI; stages: Stages; vans: VanRow[] };
+function snapshot(sim: OpsSim): Snap {
+  return {
+    clock: clock(sim.t),
+    kpi: sim.kpi(),
+    stages: sim.stages(),
+    vans: sim.vans.map((v) => {
+      const j = sim.job(v.jobId), u = j ? sim.unit(j.unitId) : undefined;
+      const progress = v.route ? (v.state === "returning" ? 1 - v.progress / v.route.dist : v.state === "onsite" ? 1 : v.progress / v.route.dist) : 0;
+      return { id: v.id, label: v.label, state: v.state, eta: sim.etaMin(v), unit: u?.code ?? "", kind: j && v.state !== "returning" ? j.kind : null, done: v.done, progress };
+    }),
+  };
+}
+
 export default function AquatechExperience() {
   const [phase, setPhase] = useState<Phase>("intro");
   const [shown, setShown] = useState(false);
@@ -79,6 +98,15 @@ export default function AquatechExperience() {
   const inViewRef = useRef<HTMLSpanElement>(null);
   const inViewCurrent = useRef(0);
   const inViewRaf = useRef(0);
+
+  /* live operations */
+  const apiRef = useRef<MapApi | null>(null);
+  const simRef = useRef<OpsSim | null>(null);
+  const [ops, setOps] = useState(false);
+  const [simReady, setSimReady] = useState(false);
+  const [snap, setSnap] = useState<Snap | null>(null);
+  const [follow, setFollow] = useState<string | null>(null);
+  const [hudMin, setHudMin] = useState(false); // live ops never stops; the HUD only folds to its top row
 
   /* environment + full-viewport lock */
   useEffect(() => {
@@ -140,6 +168,58 @@ export default function AquatechExperience() {
     return () => cancelAnimationFrame(raf);
   }, [phase, stores, reduced]);
 
+  /* the simulation is prepared as soon as the network is known (during the hold / descent) … */
+  useEffect(() => {
+    if (simRef.current || !stores) return;
+    const ac = new AbortController();
+    fetch(ROUTES_URL, { signal: ac.signal })
+      .then((r) => { if (!r.ok) throw new Error(`routes ${r.status}`); return r.json() as Promise<RoutesFile>; })
+      .then((file) => { simRef.current = new OpsSim(file, stores); setSimReady(true); })
+      .catch((e) => { if (!ac.signal.aborted) console.warn("[aquatech] ops unavailable", e); });
+    return () => ac.abort();
+  }, [stores]);
+  /* … and live operations open on their own the moment the descent lands */
+  useEffect(() => {
+    if (phase === "explore" && simReady) setOps(true);
+  }, [phase, simReady]);
+
+  /* the HUD covers the bottom of the map; the camera is told so it centres on what is visible */
+  const hudRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (!ops) return;
+    const measure = () => {
+      const h = hudRef.current;
+      if (!h) return;
+      const r = h.getBoundingClientRect();
+      const covered = Math.max(0, Math.round(window.innerHeight - r.top));
+      apiRef.current?.setPadding(covered);
+      h.parentElement?.style.setProperty("--hud-h", `${covered}px`);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (hudRef.current) ro.observe(hudRef.current);
+    window.addEventListener("resize", measure);
+    return () => { ro.disconnect(); window.removeEventListener("resize", measure); };
+  }, [ops, snap !== null]);
+
+  /* the operations loop: tick → draw on the map → refresh the console ~4×/s */
+  useEffect(() => {
+    const sim = simRef.current;
+    if (!ops || !sim) return;
+    apiRef.current?.setOps(true);
+    setSnap(snapshot(sim));
+    let raf = 0, last = performance.now(), lastSnap = 0;
+    const loop = (t: number) => {
+      const dt = (t - last) / 1000; last = t;
+      sim.tick(dt);
+      apiRef.current?.draw(sim);
+      if (t - lastSnap > 250) { lastSnap = t; setSnap(snapshot(sim)); }
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => { cancelAnimationFrame(raf); apiRef.current?.setOps(false); };
+  }, [ops]);
+
   const onLoad = useCallback(() => setMapReady(true), []);
   const onStores = useCallback((n: number) => setStores(n), []);
   const onInView = useCallback((n: number) => {
@@ -162,24 +242,34 @@ export default function AquatechExperience() {
   const onArrive = useCallback(() => setPhase("explore"), []);
   const onInteract = useCallback(() => setHint(false), []);
   const onError = useCallback((r: string) => { console.warn("[aquatech] map unavailable:", r); setFailed(r); }, []);
+  const onFollowEnd = useCallback(() => setFollow(null), []);
+
+  const toggleFollow = (id: string) => {
+    if (follow === id) { apiRef.current?.follow(null); setFollow(null); return; }
+    apiRef.current?.follow(id); setFollow(id);
+  };
 
   const unavailable = webgl === false || failed !== null;
   const title = useDecode("AQUATECH", shown, reduced);
+  const k = snap?.kpi;
 
   return (
-    <div className={`${s.stage} ${aqDisplay.variable} ${aqMono.variable}`} data-phase={phase} data-shown={shown || undefined} data-ready={mapReady || undefined}>
+    <div className={`${s.stage} ${aqDisplay.variable} ${aqMono.variable}`} data-phase={phase} data-shown={shown || undefined} data-ready={mapReady || undefined} data-ops={ops || undefined}>
             {webgl && !failed && (
         <MetroManilaMap
           descend={phase !== "intro"}
           reducedMotion={reduced}
           showStores={phase === "explore"}
           coordsRef={coordsRef}
+          apiRef={apiRef}
+          opsRef={simRef}
           onStores={onStores}
           onInView={onInView}
           onLoad={onLoad}
           onArrive={onArrive}
           onInteract={onInteract}
           onError={onError}
+          onFollowEnd={onFollowEnd}
         />
       )}
 
@@ -191,10 +281,9 @@ export default function AquatechExperience() {
         <p className={s.eyebrow}><span className={s.binary}>Binary</span> 1702 <i>/</i> Case Study</p>
         <h1 className={s.title} aria-label="Aquatech"><span aria-hidden="true">{title}</span></h1>
         <span className={s.rule} aria-hidden="true" />
-        <p className={s.headline}>
-          <span>700+ Connections.</span>
-          <span className={s.headline2}>One Connected Operation.</span>
-        </p>
+        <p className={s.headline}>Inventory Operations at Scale.</p>
+        <p className={s.support}>From warehouse to installation,<br />every piece of equipment accounted for.</p>
+        <p className={s.label}>Interactive simulation</p>
         <div className={s.cue}>
           {unavailable ? (
             <span className={s.note}>
@@ -216,24 +305,64 @@ export default function AquatechExperience() {
         {/* map data credit (required by the OpenStreetMap licence), kept as small as it can be */}
         <a className={s.credit} href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>
       </header>
-      {stores > 0 && (
-        <aside className={s.panel} aria-label="McDonald's restaurants" data-collapsed={!panelOpen || undefined}>
-          <button type="button" className={s.panelToggle} onClick={togglePanel} aria-expanded={panelOpen} aria-label={panelOpen ? "Hide panel" : "Show panel"}>
-            {panelOpen ? "\u2212" : "+"}
-          </button>
-          <p className={s.panelK}>McDonald&rsquo;s <i>/</i> Philippines</p>
-          <p className={s.panelN}><span ref={inViewRef} className={s.panelLive}>0</span> <span className={s.panelUnit}>Restaurants</span></p>
-          <ul className={s.legend}>
-            <li><span className={s.mark3d} aria-hidden="true">M</span>McDonald&rsquo;s</li>
-            {AQUATECH_OFFICE && (
-              <li>
-                <svg className={s.pin} viewBox="0 0 384 512" aria-hidden="true"><path d="M172.268 501.67C26.97 291.031 0 269.413 0 192 0 85.961 85.961 0 192 0s192 85.961 192 192c0 77.413-26.97 99.031-172.268 309.67-9.535 13.774-29.93 13.773-39.464 0zM192 272c44.183 0 80-35.817 80-80s-35.817-80-80-80-80 35.817-80 80 35.817 80 80 80z" /></svg>
-                {AQUATECH_OFFICE.label} office
-              </li>
-            )}
-          </ul>
+
+      {/* 03 — live operations HUD: a band across the bottom; the city stays the proof above it */}
+      {ops && snap && k && (
+        <aside ref={hudRef} className={s.hud} aria-label="Aquatech live operations" data-min={hudMin || undefined}>
+          <div className={s.hudTop}>
+            <p className={s.conK}><span className={s.liveDot} aria-hidden="true" />Live operations <i>/</i> <span className={s.conClock}>{snap.clock}</span> <span className={s.conTz}>PHT</span></p>
+            <ul className={s.key} aria-label="Legend">
+              <li><i style={{ background: STATUS_COLOR.ok }} />Store OK</li>
+              <li><i style={{ background: STATUS_COLOR.due }} />Needs service</li>
+              <li className={s.keyGap}><b style={{ background: STATUS_COLOR.service }} />Tech heading to store</li>
+              <li><b style={{ background: RETURN_COLOR }} />Tech returning</li>
+            </ul>
+            <div className={s.hudActions}>
+              <button type="button" className={s.depot} onClick={() => { setFollow(null); apiRef.current?.flyToWarehouse(); }}>Main office</button>
+              <button type="button" className={s.hudMin} onClick={() => setHudMin((m) => !m)} aria-expanded={!hudMin} aria-label={hudMin ? "Expand the dashboard" : "Minimize the dashboard"}>{hudMin ? "+" : "×"}</button>
+            </div>
+          </div>
+
+          <div className={s.hudMain}>
+            <div className={s.kpis}>
+              <div className={s.kpi}><span className={s.kpiK}>Stores running</span><b className={s.kpiV} style={{ color: STATUS_COLOR.ok }}>{k.uptime.toFixed(1)}<small>%</small></b></div>
+              <div className={s.kpi}><span className={s.kpiK}>Problem to tech on site</span><b className={s.kpiV}>{Math.round(k.responseMin)}<small>min</small></b></div>
+              <div className={s.kpi}><span className={s.kpiK}>Saved today</span><b className={s.kpiV} style={{ color: STATUS_COLOR.due }}>{fmtPhp(k.savedPhp)}</b></div>
+            </div>
+
+            <ol className={s.pipe} aria-label="Pipeline">
+              {([["monitor", "Watching"], ["detect", "Needs service"], ["dispatch", "Tech on the way"], ["onsite", "Tech on site"], ["verified", "Fixed today"]] as [keyof Stages, string][]).map(([key, label]) => (
+                <li key={key} className={s.pipeStage} data-stage={key} data-hot={snap.stages[key] > 0 && key !== "monitor" && key !== "verified" || undefined}>
+                  <b>{snap.stages[key]}</b><span>{label}</span>
+                </li>
+              ))}
+            </ol>
+
+          </div>
+
+          <div className={s.hudBottom}>
+            <ul className={s.fleet} aria-label="Fleet">
+              {snap.vans.map((v) => (
+                <li key={v.id}>
+                  <button type="button" className={s.van} data-state={v.state} data-follow={follow === v.id || undefined} onClick={() => toggleFollow(v.id)} title={follow === v.id ? "Stop following" : "Follow this tech"}>
+                    <span className={s.vanId}>{v.label}</span>
+                    <span className={s.vanText}>{
+                      v.state === "enroute" ? `Heading to ${v.unit} · ${v.eta} min`
+                      : v.state === "onsite" ? `At ${v.unit} · ${v.kind ? KIND_LABEL[v.kind].toLowerCase() : "working"}`
+                      : v.state === "returning" ? `Heading back · ${v.eta} min`
+                      : "At main office"
+                    }</span>
+                    <span className={s.vanBar} aria-hidden="true"><i style={{ transform: `scaleX(${v.progress})` }} /></span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <p className={s.conFoot}>Simulated operations for demonstration.</p>
         </aside>
       )}
+
       <div className={s.readout} aria-hidden="true">
         <span className={s.readK}>Metro Manila, Philippines</span>
         <span ref={coordsRef} className={s.readV} />
