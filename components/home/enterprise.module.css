@@ -184,15 +184,16 @@ button.labelNum[aria-selected="true"]::after {
   gap: clamp(32px, 6vh, 72px); /* generous separation between monument and classification */
 }
 
-/* Monumental client name — reduced ~15-20% */
+/* Monumental client name — sized to fit longer names on one line */
 .clientName {
   margin: 0;
   font-family: var(--imperial);
   font-weight: 500;
-  font-size: clamp(3.2rem, 10vw, 8rem); /* Reduced from 12vw/10rem */
+  font-size: clamp(2.6rem, 8vw, 6.5rem);
   line-height: 0.95;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+  white-space: nowrap;
   /* solid, full-opacity ivory: no blend, no glow; the scrim behind does the separating */
   color: var(--monument);
   opacity: 1;
@@ -264,10 +265,25 @@ button.labelNum[aria-selected="true"]::after {
 }
 
 .ctaGroup {
+  position: relative;
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 16px;
+  padding: 24px 48px;
+}
+
+.ctaGroup::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  -webkit-backdrop-filter: blur(10px) brightness(0.6);
+  backdrop-filter: blur(10px) brightness(0.6);
+  -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 55%, transparent 100%);
+  mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 55%, transparent 100%);
 }
 
 /* Minimal text link CTA */

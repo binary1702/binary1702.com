@@ -22,7 +22,7 @@ type Slide = { num: string; name: string; line?: string; href?: string; tint?: s
 const SLIDES: Slide[] = [
   { num: "001", name: "Aquatech", line: "Inventory Operations at Scale", href: "/client/aquatech", tint: "#1a4d6e", showCtas: true }, // ocean blue
   { num: "002", name: "TWD Corp", line: "Tax Compliance Automation", tint: "#1e4d3a", showCtas: true }, // forest green / finance
-  { num: "003", name: "Coming Soon", tint: "#FFC20E" }, // yellow caution
+  { num: "003", name: "Grooming Palace", line: "Service Operations Management", tint: "#a85d73", showCtas: true }, // soft pink / pet grooming
 ];
 
 export default function EnterpriseTransformations() {
