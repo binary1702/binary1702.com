@@ -150,20 +150,19 @@ button.labelNum[aria-selected="true"]::after {
   padding: 0 var(--pad-x);
 }
 
-/* ---- Caution state (a slide that isn't live yet) ----
-   A 'color' blend keeps the ocean's light and shape and swaps its hue for traffic-light
-   yellow; it fades in and out with the slide. The ASCII renderer itself is untouched. */
-.cautionTint {
+/* ---- Tint overlay (per-slide color wash over the ocean) ----
+   A 'color' blend keeps the ocean's light and shape and swaps its hue;
+   it fades in and out with the slide. The ASCII renderer itself is untouched. */
+.tintOverlay {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: #FFC20E;
   mix-blend-mode: color;
   opacity: 0;
-  transition: opacity 1100ms cubic-bezier(0.65, 0, 0.2, 1);
+  transition: opacity 1100ms cubic-bezier(0.65, 0, 0.2, 1), background 1100ms cubic-bezier(0.65, 0, 0.2, 1);
 }
 
-.caution .cautionTint {
+.tinted .tintOverlay {
   opacity: 1;
 }
 
@@ -264,6 +263,13 @@ button.labelNum[aria-selected="true"]::after {
   border-top: 1px solid var(--line);
 }
 
+.ctaGroup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
 /* Minimal text link CTA */
 .cta {
   position: relative;
@@ -315,6 +321,21 @@ button.labelNum[aria-selected="true"]::after {
 .cta:hover svg,
 .cta:focus-visible svg {
   transform: translate(2px, -2px);
+}
+
+/* Disabled CTA */
+.ctaDisabled {
+  position: relative;
+  isolation: isolate;
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 1;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(242, 239, 231, 0.65);
+  padding: 6px 0;
+  cursor: default;
 }
 
 /* ---- Animation states ---- */

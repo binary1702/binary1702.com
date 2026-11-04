@@ -16,13 +16,13 @@ import s from "./enterprise.module.css";
    the controls. Add a transformation by adding an entry to SLIDES.
    ------------------------------------------------------------------ */
 
-/** caution: a not-yet-live slide — the ocean turns traffic-light yellow */
-type Slide = { num: string; name: string; line?: string; href?: string; caution?: boolean };
+/** tint: optional color wash over the ocean; showCtas: show the CTA row (even if disabled) */
+type Slide = { num: string; name: string; line?: string; href?: string; tint?: string; showCtas?: boolean };
 
 const SLIDES: Slide[] = [
-  { num: "001", name: "Aquatech", line: "Inventory Operations at Scale", href: "/client/aquatech" },
-  // placeholder until the next engagement is ready to show; no link on purpose
-  { num: "002", name: "Coming Soon", caution: true },
+  { num: "001", name: "Aquatech", line: "Inventory Operations at Scale", href: "/client/aquatech", tint: "#1a4d6e", showCtas: true }, // ocean blue
+  { num: "002", name: "TWD Corp", line: "Tax Compliance Automation", tint: "#1e4d3a", showCtas: true }, // forest green / finance
+  { num: "003", name: "Coming Soon", tint: "#FFC20E" }, // yellow caution
 ];
 
 export default function EnterpriseTransformations() {
@@ -38,20 +38,22 @@ export default function EnterpriseTransformations() {
     return () => io.disconnect();
   }, []);
 
+  const currentTint = SLIDES[index].tint;
+
   return (
     <section
       ref={ref}
       id="transformations"
       aria-labelledby="transformations-title"
       aria-roledescription="carousel"
-      className={`${s.section} ${live ? s.live : ""} ${SLIDES[index].caution ? s.caution : ""}`}
+      className={`${s.section} ${live ? s.live : ""} ${currentTint ? s.tinted : ""}`}
     >
       {/* Oceanic ASCII backdrop — deep underwater atmosphere, shared by every slide */}
       <div className={s.field}>
         <OceanicField active={live} />
       </div>
-      {/* traffic-light yellow wash over the ocean while a not-yet-live slide is showing */}
-      <div className={s.cautionTint} aria-hidden="true" />
+      {/* color wash over the ocean, driven by the current slide's tint */}
+      <div className={s.tintOverlay} style={{ background: currentTint || "transparent" }} aria-hidden="true" />
       <div className={s.scrim} aria-hidden="true" />
 
       <div className={s.grid}>
@@ -105,14 +107,21 @@ export default function EnterpriseTransformations() {
                   </div>
 
                   <div className={s.context}>
-                    {sl.href ? (
-                      <Link href={sl.href} className={s.cta}>
-                        Explore Case Study
-                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden="true">
-                          <path d="M1.5 8.5L8.5 1.5M8.5 1.5H3.5M8.5 1.5V6.5" />
-                        </svg>
-                      </Link>
-                    ) : null}
+                    {sl.showCtas && (
+                      <div className={s.ctaGroup}>
+                        {sl.href ? (
+                          <Link href={sl.href} className={s.cta}>
+                            Explore Simulation
+                            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden="true">
+                              <path d="M1.5 8.5L8.5 1.5M8.5 1.5H3.5M8.5 1.5V6.5" />
+                            </svg>
+                          </Link>
+                        ) : (
+                          <span className={s.ctaDisabled}>Explore Simulation</span>
+                        )}
+                        <span className={s.ctaDisabled}>View Case Study</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
