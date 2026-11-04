@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  allowedDevOrigins: ['binary-1702.loc', 'lh'],
   async headers() {
     return [
       {

@@ -180,7 +180,11 @@ export default function AquatechExperience() {
   }, [stores]);
   /* … and live operations open on their own the moment the descent lands */
   useEffect(() => {
-    if (phase === "explore" && simReady) setOps(true);
+    if (phase === "explore" && simReady && simRef.current) {
+      /* prime the first snapshot so the HUD has data on its very first render frame */
+      setSnap(snapshot(simRef.current));
+      setOps(true);
+    }
   }, [phase, simReady]);
 
   /* the HUD covers the bottom of the map; the camera is told so it centres on what is visible */
@@ -195,11 +199,12 @@ export default function AquatechExperience() {
       apiRef.current?.setPadding(covered);
       h.parentElement?.style.setProperty("--hud-h", `${covered}px`);
     };
-    measure();
+    /* defer first measurement so the HUD animation can start without a forced reflow */
+    const t = requestAnimationFrame(() => requestAnimationFrame(measure));
     const ro = new ResizeObserver(measure);
     if (hudRef.current) ro.observe(hudRef.current);
     window.addEventListener("resize", measure);
-    return () => { ro.disconnect(); window.removeEventListener("resize", measure); };
+    return () => { cancelAnimationFrame(t); ro.disconnect(); window.removeEventListener("resize", measure); };
   }, [ops, snap !== null]);
 
   /* the operations loop: tick → draw on the map → refresh the console ~4×/s */
@@ -207,8 +212,8 @@ export default function AquatechExperience() {
     const sim = simRef.current;
     if (!ops || !sim) return;
     apiRef.current?.setOps(true);
-    setSnap(snapshot(sim));
-    let raf = 0, last = performance.now(), lastSnap = 0;
+    /* snap is already primed before ops goes true; no need to set it again here */
+    let raf = 0, last = performance.now(), lastSnap = performance.now();
     const loop = (t: number) => {
       const dt = (t - last) / 1000; last = t;
       sim.tick(dt);

@@ -272,6 +272,7 @@
   background: linear-gradient(180deg, rgba(11,12,14,.8), rgba(11,12,14,.94) 30%, rgba(11,12,14,.97));
   border-top: 1px solid var(--line);
   animation: hudIn .9s cubic-bezier(.2,.7,.2,1) both;
+  will-change: transform, opacity;
   font-family: var(--mono); color: var(--ivory);
 }
 .hud::before { content: ""; position: absolute; left: 0; right: 0; top: -1px; height: 1px; background: linear-gradient(90deg, transparent, var(--fleet) 30%, var(--fleet) 70%, transparent); opacity: .7; }

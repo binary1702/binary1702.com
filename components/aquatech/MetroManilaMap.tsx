@@ -209,6 +209,9 @@ const OPS_COLOR = byStatus(STATUS_COLOR.ok, STATUS_COLOR.due, STATUS_COLOR.alert
 
 /** Techs: blue heading out, red heading home. */
 const BY_DIR: Expr = ["match", ["get", "state"], "returning", RETURN_COLOR, FLEET_COLOR];
+/** Routes heading home read a little quieter than routes heading out. */
+const DIM: Expr = ["match", ["get", "state"], "returning", 0.6, 1];
+const GLOW_OPACITY = ["*", 0.22, DIM] as Expr, ROUTE_OPACITY = ["*", 0.9, DIM] as Expr;
 const DASH = [[0, 4, 3], [0.5, 4, 2.5], [1, 4, 2], [1.5, 4, 1.5], [2, 4, 1], [2.5, 4, 0.5], [3, 4, 0], [0, 0.5, 3, 3.5], [0, 1, 3, 3], [0, 1.5, 3, 2.5], [0, 2, 3, 2], [0, 2.5, 3, 1.5], [0, 3, 3, 1], [0, 3.5, 3, 0.5]];
 
 export default function MetroManilaMap(props: Props) {
@@ -245,7 +248,9 @@ export default function MetroManilaMap(props: Props) {
         maxPitch: 75,
         maxBounds: BOUNDS,
         attributionControl: false,
-        pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+        // 1.5× on retina (~45% fewer pixels than 2×): the city animates continuously, and
+        // changing this later would resize the canvas and re-render every tile in one frame
+        pixelRatio: Math.min(window.devicePixelRatio || 1, 1.5),
         canvasContextAttributes: { antialias: !mobile.current },
         fadeDuration: 400,
       });
@@ -375,14 +380,13 @@ export default function MetroManilaMap(props: Props) {
         layout: { ...hidden, "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": 11, "text-letter-spacing": 0.5, "text-transform": "uppercase", "text-allow-overlap": true },
         paint: { "text-color": "rgba(242,239,231,.45)", "text-halo-color": "rgba(11,12,14,.9)", "text-halo-width": 1.4 },
       });
-      const dim: Expr = ["match", ["get", "state"], "returning", 0.6, 1];
       map.addLayer({
         id: "ops-route-glow", type: "line", source: "ops-routes", layout: { ...hidden, "line-cap": "round", "line-join": "round" },
-        paint: { "line-color": BY_DIR, "line-blur": 4, "line-opacity": ["*", 0.22, dim] as Expr, "line-width": ["interpolate", ["linear"], ["zoom"], 10, 4, 15, 12] },
+        paint: { "line-color": BY_DIR, "line-blur": 4, "line-opacity": GLOW_OPACITY, "line-width": ["interpolate", ["linear"], ["zoom"], 10, 4, 15, 12] },
       });
       map.addLayer({
         id: "ops-route", type: "line", source: "ops-routes", layout: { ...hidden, "line-join": "round" },
-        paint: { "line-color": BY_DIR, "line-opacity": ["*", 0.9, dim] as Expr, "line-width": ["interpolate", ["linear"], ["zoom"], 10, 1.4, 15, 3.2], "line-dasharray": DASH[0] },
+        paint: { "line-color": BY_DIR, "line-opacity": ROUTE_OPACITY, "line-width": ["interpolate", ["linear"], ["zoom"], 10, 1.4, 15, 3.2], "line-dasharray": DASH[0] },
       });
       map.addLayer({
         id: "ops-van-halo", type: "circle", source: "ops-vans", layout: hidden,
@@ -469,8 +473,6 @@ export default function MetroManilaMap(props: Props) {
         setOpsVisibility(on);
         paintOps(on);
         popup.remove();
-        // ops animates continuously, so shade fewer pixels: 1.5× instead of 2× on retina (~45% fewer)
-        map.setPixelRatio(Math.min(window.devicePixelRatio || 1, on ? 1.5 : 2));
         if (!on) map.setPadding({ top: 0, bottom: 0, left: 0, right: 0 });
         if (storesReady.current) {
           // the halo pulses in ops mode, so its fade transition is switched off while ops is on
@@ -479,12 +481,33 @@ export default function MetroManilaMap(props: Props) {
         }
         if (!on) endFollow();
         else {
-          lastRoutes = -1;
-          const sim = opsRef.current;
-          if (sim) (map.getSource("ops-zones") as maplibregl.GeoJSONSource).setData(zonePolygons(sim.warehouse, sim.radiusKm));
+          // spread the start over three frames: layers/paint now, zones next, then vans + routes
+          lastTouch = performance.now() + 32;
+          // the routes hold back while the camera glides up (1.8 s), then fade in over 1.6 s
+          for (const id of ["ops-route-glow", "ops-route"]) {
+            map.setPaintProperty(id, "line-opacity-transition", { duration: 0, delay: 0 });
+            map.setPaintProperty(id, "line-opacity", 0);
+          }
+          requestAnimationFrame(() => {
+            const sim = opsRef.current;
+            if (sim && ops) (map.getSource("ops-zones") as maplibregl.GeoJSONSource).setData(zonePolygons(sim.warehouse, sim.radiusKm));
+            requestAnimationFrame(() => {
+              lastRoutes = -1; lastTouch = 0;
+              map.setPaintProperty("ops-route-glow", "line-opacity-transition", { duration: 1600, delay: 1500 });
+              map.setPaintProperty("ops-route", "line-opacity-transition", { duration: 1600, delay: 1500 });
+              map.setPaintProperty("ops-route-glow", "line-opacity", GLOW_OPACITY);
+              map.setPaintProperty("ops-route", "line-opacity", ROUTE_OPACITY);
+            });
+          });
         }
       },
-      setPadding: (bottom) => { if (ops) map.setPadding({ top: 0, bottom, left: 0, right: 0 }); },
+      setPadding: (bottom) => {
+        if (!ops) return;
+        const cur = map.getPadding().bottom ?? 0;
+        // first measure glides with the HUD slide-in; later ones (minimize / expand) ease too
+        if (Math.abs(cur - bottom) > 4) map.easeTo({ padding: { top: 0, bottom, left: 0, right: 0 }, duration: cur === 0 ? 1800 : 500, easing: (t) => 1 - Math.pow(1 - t, 3) });
+        else map.setPadding({ top: 0, bottom, left: 0, right: 0 });
+      },
       follow: (vanId) => {
         if (!vanId) { endFollow(); return; }
         const v = opsRef.current?.van(vanId);
